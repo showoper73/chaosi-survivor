@@ -65,7 +65,7 @@
 <script>
 "use strict";
 // ============================================================
-// 抄襲倖存者 試玩版 第二版（小遊戲-001）。單檔，不用伺服器。
+// 抄襲倖存者 v1.1（小遊戲-001）。單檔，不用伺服器。
 // 遊戲資料在 DATA 區；畫面全部用程式手繪（醜但有模有樣），假 2.5D（站立、影子、前後遮擋）。
 // ============================================================
 
@@ -74,13 +74,21 @@ const DONATE_URL = "https://payment.ecpay.com.tw/Broadcaster/Donate/A1BE1451D4ED
 const YT_URL = "https://www.youtube.com/@techcat0218"; // 綠界收款／贊助連結，申請好貼這裡
 
 const HEROES = [
-  { id:"mr",     name:"正版先生",   hp:120, speed:150, weapon:"briefcase", desc:"一句話都不說。公事包很重。" },
-  { id:"ms",     name:"正版小姐",   hp:95,  speed:168, weapon:"letter",    desc:"口頭禪：「我們法務會聯絡你。」" },
-  { id:"orange", name:"橘董",       hp:110, speed:152, weapon:"orange",    desc:"兩款原作都代理過，看到抄襲最心痛。" },
-  { id:"kim",    name:"金社長", hp:100, speed:155, weapon:"autohunt",  desc:"相信自動狩獵能解決一切。" },
-  { id:"stone",  name:"石會長",     hp:125, speed:158, weapon:"ticket",    desc:"倖存者版居然要排隊，他很欣慰。" },
-  { id:"origin", name:"倖存者始祖", hp:100, speed:162, weapon:"beam",      desc:"大家抄的其實是他的玩法。", hidden:true },
+  { id:"mr",     name:"正版先生",   hp:120, speed:150, weapon:"briefcase", desc:"從頭到尾一句話都不說。", trait:"附沉默光環，受傷 -20%", mod:{ armor:.2 },
+    ult:{ name:"……", kind:"freeze", col:"#222" }, lines:["……","……。","（瞪）","（沉默）","……（嘆氣）","（已讀）","（看了你一眼）"] },
+  { id:"ms",     name:"正版小姐",   hp:95,  speed:168, weapon:"letter",    desc:"口頭禪：「我們法務會聯絡你。」", trait:"經驗 +20%，投射物 +1", mod:{ xp:.2, proj:1 },
+    ult:{ name:"告你喔！！", kind:"dmg", col:"#d6322b" }, lines:["告你喔！","快下架！","截圖了喔。","存證了。","法務會聯絡你。","這是侵權。","律師費你出。","下架！下架！"] },
+  { id:"orange", name:"橘董",       hp:110, speed:152, weapon:"orange",    desc:"兩款原作都代理過，看到抄襲最心痛。", trait:"攻擊範圍 +20%", mod:{ area:.2 },
+    ult:{ name:"橘子雨！", kind:"orange", col:"#f08a24" }, lines:["這我代理過！","抄得比我還像？","授權費呢？","橘子不是這樣用的！","我兩款都代理過欸。","你這個我認得。"] },
+  { id:"kim",    name:"金社長",     hp:100, speed:155, weapon:"autohunt",  desc:"相信自動狩獵能解決一切。", trait:"攻擊間隔 -15%", mod:{ cd:.15 },
+    ult:{ name:"全自動！", kind:"dmg", col:"#5a4a9a" }, lines:["開自動就好。","我先掛機。","課金解決一切。","自動狩獵啟動！","手動？那是什麼？","這個可以賣月卡。"] },
+  { id:"stone",  name:"石會長",     hp:130, speed:158, weapon:"ticket",    desc:"倖存者版居然要排隊，他很欣慰。", trait:"血最多，每秒回 1 血", mod:{ regen:1 },
+    ult:{ name:"請排隊！", kind:"push", col:"#2f6d8f" }, lines:["請抽號碼牌。","前面還有 9998 人。","排隊才是正版體驗。","伺服器滿了，很好。","請勿插隊。","你的號碼是 087。"] },
+  { id:"origin", name:"倖存者始祖", hp:100, speed:162, weapon:"beam",      desc:"大家抄的其實是他的玩法。", trait:"投射物 +1，傷害 +15%", mod:{ proj:1, dmg:.15 }, hidden:true,
+    ult:{ name:"原創在此", kind:"dmg", col:"#b8860b" }, lines:["這玩法我十年前就做了。","抄吧，抄吧。","原創？笑死。","你們都是我的分身。"] },
 ];
+// 抄襲者（怪）會隨機講的話
+const ENEMY_LINES = ["致敬而已啦","我只是參考","好玩就好","又不是只有我抄","尊重原作，但我更愛玩","名字不一樣啊","這叫二創","免費的耶","官方又沒說不行","我改了一個字","你有證據嗎？","抄？這叫學習","原作才是抄我的","刪了就沒事了","我哪有抄","換個顏色就是原創","大家都這樣啊"];
 
 // evo：[要配的被動, 超進化名稱, 說明]
 const WEAPONS = {
@@ -98,17 +106,22 @@ const WEAPONS = {
   chain:    { name:"傳票閃電",   desc:"閃電一個傳一個",                  evo:["cd","集體訴訟","一道閃電串十幾個"] },
   block:    { name:"封鎖結界",   desc:"把身邊的怪全部彈開",              evo:["hp","黑名單結界","彈得更遠、更痛"] },
   call:     { name:"客服電話",   desc:"「您的電話正在轉接中」震波",      evo:["mag","客服地獄","全方位轉接，所有人都被拖住"] },
+  snap:     { name:"截圖存證",   desc:"喀嚓拍下一整塊，裡面的人受傷又定住", evo:["xp","全螢幕截圖","整個畫面都被截下來"] },
+  report:   { name:"檢舉旗",     desc:"射出檢舉旗，一路穿過所有人",      evo:["dmg","檢舉大隊","一次插滿八面旗"] },
+  dmca:     { name:"DMCA 飛彈",  desc:"追著抄襲者飛，撞到就炸",          evo:["area","DMCA 轟炸","飛彈變多、爆炸變大"] },
+  undo:     { name:"Ctrl+Z",     desc:"把身邊的怪「復原」回畫面外",      evo:["cd","Ctrl+Shift+Z","更常按、範圍更大"] },
+  star:     { name:"一星負評",   desc:"星星從天而降，砸出負評",          evo:["regen","負評海","星星下成暴雨"] },
 };
 const PASSIVES = {
   dmg:   { name:"律師團",   desc:"傷害 +15%" },
-  cd:    { name:"加班",     desc:"攻擊間隔 -8%" },
-  spd:   { name:"跑得快",   desc:"移動速度 +10%" },
+  cd:    { name:"爆肝加班", desc:"攻擊間隔 -8%" },
+  spd:   { name:"落跑速度", desc:"移動速度 +10%" },
   hp:    { name:"厚臉皮",   desc:"血量上限 +20，並回 20" },
   mag:   { name:"吸金體質", desc:"撿經驗範圍 +35%" },
-  xp:    { name:"公關稿",   desc:"經驗 +15%" },
+  xp:    { name:"業配稿",   desc:"經驗 +15%" },
   area:  { name:"大聲公",   desc:"攻擊範圍 +12%" },
   proj:  { name:"小編分身", desc:"投射物數量 +1", max:3 },
-  regen: { name:"續命咖啡", desc:"每秒回 0.6 血" },
+  regen: { name:"續命咖啡（別人請的）", desc:"每秒回 0.6 血" },
 };
 const MAX_WEAPONS = 6, MAX_WLV = 5, MAX_PLV = 5;
 
@@ -158,39 +171,83 @@ const ENEMIES = {
   // 第六關 正版大樓
   banner:  { label:"尊重原作但我更愛玩", shape:"banner", color:"#fff3b0", r:26, hp:100, spd:36, dmg:18, xp:8, onBody:true },
   lawyer:  { label:"假律師",   shape:"suit",     color:"#555555", r:16, hp:26, spd:64, dmg:14, xp:3, beh:"shoot", shot:"存證" },
+  // 到處都有的抄襲者
+  zhijing: { label:"致敬而已", shape:"sign",     color:"#ffe6e6", r:15, hp:12, spd:68, dmg:9,  xp:1, onBody:true },
+  cankao:  { label:"只是參考", shape:"sign",     color:"#e6f0ff", r:15, hp:12, spd:70, dmg:9,  xp:1, onBody:true },
+  erchuang:{ label:"這叫二創", shape:"sign",     color:"#eaffe6", r:15, hp:14, spd:64, dmg:9,  xp:1, onBody:true, beh:"dash" },
+  // 直播間
+  donor:   { label:"斗內大哥", shape:"bag",      color:"#e0b84a", r:18, hp:26, spd:52, dmg:11, xp:3 },
+  marquee: { label:"感謝斗內", shape:"banner",   color:"#c8f0ff", r:15, hp:14, spd:70, dmg:10, xp:1, onBody:true, beh:"line" },
+  sub:     { label:"訂閱",     shape:"button",   color:"#d6322b", r:13, hp:10, spd:88, dmg:8,  xp:1, beh:"dash" },
+  sponsor: { label:"業配",     shape:"scroll",   color:"#ffe08a", r:15, hp:16, spd:62, dmg:10, xp:2, onBody:true, beh:"shoot", shot:"業配" },
+  clip:    { label:"精華剪輯", shape:"phone",    color:"#c0392b", r:14, hp:14, spd:80, dmg:9,  xp:1, onBody:true },
+  // 手遊廣告
+  fakead:  { label:"跟廣告不一樣", shape:"arcade", color:"#9be7a0", r:18, hp:22, spd:56, dmg:12, xp:2, onBody:true, beh:"split", splitTo:"pull" },
+  pull:    { label:"拉針",     shape:"sign",     color:"#ffffff", r:12, hp:7,  spd:96, dmg:7,  xp:.6, onBody:true },
+  first1:  { label:"首儲1元",  shape:"bag",      color:"#ffd34d", r:14, hp:12, spd:78, dmg:9,  xp:1 },
+  vip:     { label:"VIP15",    shape:"robot",    color:"#e0c060", r:17, hp:26, spd:54, dmg:12, xp:3, onBody:true },
+  gacha:   { label:"999抽",    shape:"receipt",  color:"#fff3b0", r:15, hp:14, spd:70, dmg:10, xp:1, onBody:true, beh:"shoot", shot:"保底" },
+  // AI 抄抄工廠
+  aiimg:   { label:"AI生圖",   shape:"robot",    color:"#c9b6ff", r:16, hp:20, spd:60, dmg:11, xp:2, onBody:true },
+  reskin:  { label:"一鍵換皮", shape:"scroll",   color:"#d6f5ff", r:15, hp:16, spd:66, dmg:10, xp:2, onBody:true, beh:"shoot", shot:"換皮" },
+  finger:  { label:"六根手指", shape:"thumb",    color:"#ffd9a8", r:14, hp:12, spd:90, dmg:9,  xp:1 },
+  prompt:  { label:"提示詞",   shape:"paper",    color:"#fffbe0", r:15, hp:14, spd:64, dmg:9,  xp:.8, beh:"split", splitTo:"scrap" },
+  asset:   { label:"素材包",   shape:"bag",      color:"#b5e0c0", r:16, hp:20, spd:56, dmg:11, xp:2 },
+  // 法院
+  cease:   { label:"存證信函", shape:"receipt",  color:"#ffffff", r:15, hp:16, spd:66, dmg:10, xp:2, onBody:true },
+  settle:  { label:"和解書",   shape:"paper",    color:"#f0f7ff", r:15, hp:18, spd:60, dmg:10, xp:2 },
+  appeal:  { label:"上訴",     shape:"sign",     color:"#ffe08a", r:14, hp:14, spd:72, dmg:10, xp:1, onBody:true, beh:"dash" },
+  fee:     { label:"律師費",   shape:"bag",      color:"#d79a2b", r:19, hp:34, spd:48, dmg:13, xp:4 },
+  netlaw:  { label:"鄉民律師", shape:"suit",     color:"#7a6a55", r:16, hp:22, spd:66, dmg:12, xp:2, beh:"shoot", shot:"依法" },
 };
 
 const BOSSES = {
-  pin:     { name:"置頂留言王",   label:"置頂", shape:"bubble",   color:"#ffffff", r:58, hp:900,  spd:62, dmg:22, shot:"已編輯", summon:["troll","like","flame"] },
-  bigcup:  { name:"歡迎買杯咖啡", label:"買杯咖啡?", shape:"cup", color:"#8a5a35", r:60, hp:1200, spd:60, dmg:24, shot:"咖啡", summon:["coffee","donate"] },
-  dealer:  { name:"外掛商人",     label:"外掛大賣", shape:"screen", color:"#3b3b3b", r:58, hp:1600, spd:66, dmg:26, shot:"100T", summon:["plate","bag10"] },
-  bigcopy: { name:"壞掉的影印機", label:"影印中…", shape:"copier", color:"#bdbdbd", r:64, hp:2000, spd:56, dmg:28, shot:"A4", summon:["paper","copier"] },
-  hydra:   { name:"複製站九頭蛇", label:"複製站×9", shape:"browser", color:"#53b8c0", r:64, hp:2600, spd:62, dmg:30, shot:".com", summon:["ros","mirror","ro"] },
-  first:   { name:"「第一份」",   label:"?", shape:"question", color:"#2b2b2b", r:70, hp:3600, spd:64, dmg:34, shot:"原創?", summon:["ro","lin","a3","d2"] },
+  pin:     { name:"置頂：我不是針對誰", label:"置頂", shape:"bubble",   color:"#ffffff", r:58, hp:520,  spd:66, dmg:20, shot:"已編輯", summon:["troll","like","flame"], line:"我不是針對誰，我是說在座的各位" },
+  bigcup:  { name:"不收贊助（但收咖啡）", label:"買杯咖啡?", shape:"cup", color:"#8a5a35", r:60, hp:700, spd:64, dmg:22, shot:"咖啡", summon:["coffee","donate"], line:"我們不收贊助喔～咖啡可以" },
+  dealer:  { name:"外掛商人",     label:"外掛大賣", shape:"screen", color:"#3b3b3b", r:58, hp:880, spd:68, dmg:24, shot:"100T", summon:["plate","bag10"], line:"免費遊戲，付費外掛" },
+  bigcopy: { name:"壞掉的影印機", label:"影印中…", shape:"copier", color:"#bdbdbd", r:64, hp:1050, spd:58, dmg:26, shot:"A4", summon:["paper","copier"], line:"原稿？什麼原稿？" },
+  hydra:   { name:"複製站九頭蛇", label:"複製站×9", shape:"browser", color:"#53b8c0", r:64, hp:1250, spd:64, dmg:28, shot:".com", summon:["ros","mirror","ro"], line:"砍一個網址，長出九個" },
+  anchor:  { name:"業配之王",     label:"本集由…贊助", shape:"screen", color:"#2b2b2b", r:60, hp:1450, spd:66, dmg:29, shot:"業配", summon:["sponsor","donor","sub"], line:"本集由盜版遊戲贊助播出" },
+  adking:  { name:"跟廣告一模一樣", label:"立即下載", shape:"phone", color:"#2b2b2b", r:62, hp:1650, spd:66, dmg:30, shot:"拉針", summon:["fakead","first1","gacha"], line:"實際遊戲畫面（並不是）" },
+  oneclick:{ name:"一鍵生成大神", label:"Generate", shape:"robot", color:"#b9a6f0", r:62, hp:1850, spd:66, dmg:31, shot:"AI", summon:["aiimg","reskin","finger"], line:"我一秒能抄一百款" },
+  verdict: { name:"最終判決：好玩就好", label:"判決書", shape:"scroll", color:"#f3e2b8", r:64, hp:2050, spd:64, dmg:32, shot:"駁回", summon:["appeal","fee","netlaw"], line:"本庭認為：好玩就好" },
+  first:   { name:"「第一份」",   label:"?", shape:"question", color:"#2b2b2b", r:70, hp:2400, spd:66, dmg:34, shot:"原創?", summon:["ro","lin","a3","d2","zhijing"], line:"你確定……你是第一份嗎？" },
 };
 
 // 場景物件：kind 決定畫法；t 是寫在上面的字
 const STAGES = [
   { name:"脆上吵架區", sub:"一則貼文，三千則留言", bg:"#f4efe1", tile:"#ece5d3", boss:"pin",
-    spawn:[["like",5,0],["troll",5,0],["plus1",3,10],["dislike",3,20],["melon",3,25],["lemon",2,35],["keyb",3,45],["flame",2,55],["read",2,70],["alt",2,85],["hash",2,100]],
-    props:[["sign","公告：理性討論"],["sign","禁止引戰（沒用）"],["bigphone","熱門貼文"],["lamp"],["bin","已刪留言"],["boom","!!!"],["stall","吃瓜 10元"],["crate","截圖存證"],["boom","笑死"],["sign","本區已吵 87 天"]] },
+    spawn:[["like",5,0],["troll",5,0],["plus1",3,10],["zhijing",3,15],["dislike",3,20],["melon",3,25],["lemon",2,35],["keyb",3,45],["flame",2,55],["read",2,70],["alt",2,85],["hash",2,100]],
+    props:[["sign","公告：理性討論"],["sign","禁止引戰（沒用）"],["bigphone","熱門貼文"],["lamp"],["bin","已刪留言"],["boom","!!!"],["stall","吃瓜 10元"],["crate","截圖存證"],["boom","笑死"],["sign","本區已吵 87 天"],["copycat","抄留言中…"],["ctrlcv"]] },
   { name:"咖啡廳",     sub:"不營利，但歡迎請喝咖啡", bg:"#f1e6d6", tile:"#e7d8c2", boss:"bigcup",
     spawn:[["coffee",5,0],["latte",4,0],["receipt",3,15],["ecpay",3,25],["tip",3,35],["donate",2,45],["troll",2,0]],
-    props:[["table"],["table"],["machine","咖啡機"],["sign","今日推薦：贊助拿鐵"],["plant"],["stall","綠界付款處"],["lamp"],["sign","沒有贊助系統"]] },
+    props:[["table"],["table"],["machine","咖啡機"],["sign","今日推薦：贊助拿鐵"],["plant"],["stall","綠界付款處"],["lamp"],["sign","沒有贊助系統"],["copycat","抄菜單中…"],["sign","咖啡 = 贊助（不是）"]] },
   { name:"外掛黑市",   sub:"免費遊戲，付費外掛", bg:"#e9e9e2", tile:"#dcdcd2", boss:"dealer",
     spawn:[["plate",4,0],["bag10",4,0],["sell",3,10],["script",2,20],["robot",3,30],["bag100",1,60],["keyb",2,0]],
-    props:[["stall","外掛 便宜賣"],["stall","10T 只要 99"],["crate","代練"],["lamp"],["bin","被封的帳號"],["sign","本店不收綠界"],["tent"]] },
+    props:[["stall","外掛 便宜賣"],["stall","10T 只要 99"],["crate","代練"],["lamp"],["bin","被封的帳號"],["sign","本店不收綠界"],["tent"],["ctrlcv"],["copycat","抄外掛中…"]] },
   { name:"影印機工廠", sub:"抄一份、抄兩份、抄無限份", bg:"#eef0f2", tile:"#e0e3e7", boss:"bigcopy",
-    spawn:[["paper",5,0],["toner",3,10],["jam",3,20],["stapler",2,35],["copier",2,50]],
-    props:[["machine","影印機"],["pile"],["pile"],["crate","A4"],["sign","今日產量：無限"],["rack"],["crate","原稿（遺失）"]] },
+    spawn:[["paper",5,0],["toner",3,10],["cankao",3,15],["jam",3,20],["stapler",2,35],["copier",2,50]],
+    props:[["machine","影印機"],["pile"],["pile"],["crate","A4"],["sign","今日產量：無限"],["rack"],["crate","原稿（遺失）"],["xerox","原創"],["xerox","正版"]] },
   { name:"複製站迷宮", sub:"每個網址都說自己是官方", bg:"#e7f1ee", tile:"#d7e6e1", boss:"hydra",
-    spawn:[["ro",4,0],["ros",4,0],["lin",2,20],["a3",2,30],["d2",2,50],["mirror",2,70]],
-    props:[["sign","官方 →"],["sign","← 官方"],["sign","真・官方 ↑"],["rack"],["lamp"],["crate",".com"],["sign","ro-survivor-real.com"]] },
+    spawn:[["ro",4,0],["ros",4,0],["erchuang",2,10],["lin",2,20],["a3",2,30],["d2",2,50],["mirror",2,70]],
+    props:[["sign","官方 →"],["sign","← 官方"],["sign","真・官方 ↑"],["rack"],["lamp"],["crate",".com"],["sign","ro-survivor-real.com"],["rename","RO倖存者|R0倖存者"],["ctrlcv"]] },
+  { name:"直播間",     sub:"「這款是盜版喔，但好好玩」", bg:"#f3ecf6", tile:"#e8deee", boss:"anchor",
+    spawn:[["sub",5,0],["clip",4,0],["marquee",2,10],["donor",3,20],["sponsor",3,30],["zhijing",2,40],["erchuang",2,50]],
+    props:[["bigphone","LIVE 9.9萬"],["sign","本台不收贊助（請按訂閱）"],["lamp"],["boom","斗內"],["crate","業配商品"],["sign","聊天室：好玩就好"],["copycat","抄台詞中…"],["rename","正版|政版"],["plant"]] },
+  { name:"手遊廣告",   sub:"實際遊戲畫面可能有所不同（完全不同）", bg:"#eef6ea", tile:"#dfeedd", boss:"adking",
+    spawn:[["pull",6,0],["first1",4,0],["fakead",3,10],["gacha",3,20],["vip",2,30],["cankao",2,40]],
+    props:[["bigphone","立即下載"],["sign","拉針救公主"],["sign","首儲只要 1 元"],["boom","SSR!!"],["crate","999 抽"],["stall","VIP 專區"],["rename","正版畫面|廣告畫面"],["xerox","廣告"],["lamp"]] },
+  { name:"AI 抄抄工廠", sub:"一句提示詞，生出一百款倖存者", bg:"#eceff7", tile:"#dde2f0", boss:"oneclick",
+    spawn:[["prompt",5,0],["finger",4,0],["aiimg",3,10],["reskin",3,20],["asset",2,30],["erchuang",2,40]],
+    props:[["rack"],["rack"],["machine","算力"],["sign","今日已生成：∞ 款"],["crate","素材包"],["ctrlcv"],["xerox","AI原創"],["sign","手指數：隨機"],["pile"]] },
+  { name:"法院",       sub:"告到最後，判決書也是抄的", bg:"#f2eee6", tile:"#e6dfd2", boss:"verdict",
+    spawn:[["cease",5,0],["settle",4,0],["appeal",3,10],["netlaw",3,20],["fee",2,30],["lawyer",2,40],["zhijing",2,0]],
+    props:[["desk"],["desk"],["sign","肅靜"],["sign","旁聽席（吃瓜）"],["stall","吃瓜 20元"],["crate","卷宗"],["copycat","抄判決書…"],["machine","飲水機"],["plant"]] },
   { name:"正版大樓",   sub:"正版在頂樓，一句話都沒說", bg:"#efe9f3", tile:"#e3dbe9", boss:"first",
     spawn:[["ro",3,0],["lin",2,0],["a3",2,0],["flame",2,0],["d2",2,15],["lawyer",2,30],["banner",1,60],["mirror",2,40],["plate",2,0]],
-    props:[["desk"],["desk"],["plant"],["sign","法務部"],["machine","飲水機"],["crate","存證信函"],["sign","正版：……"]] },
+    props:[["desk"],["desk"],["plant"],["sign","法務部"],["machine","飲水機"],["crate","存證信函"],["sign","正版：……"],["xerox","正版"],["copycat","抄正版中…"]] },
 ];
-const STAGE_TIME = 150; // 每關秒數，到了 BOSS 出來
+const STAGE_TIME = 60; // 每關秒數，到了 BOSS 出來（spawn 表的解鎖秒數照 150 秒寫，會等比例壓縮）
 
 // ---------------- 工具 ----------------
 function rng(seed){ let a = seed>>>0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -240,11 +297,12 @@ function sfx(n){
     case "win":  [523,659,784,659,784,1047].forEach((f,i)=>tone(f,.2,"square",.07,0,i*.12)); break;
     case "lose": [392,370,349,330].forEach((f,i)=>tone(f,.3,"triangle",.08,0,i*.22)); break;
     case "click":tone(700,.04,"square",.04); break;
+    case "snap": noise(.06,.2,6000); tone(1800,.05,"square",.05,900); break;
     case "pick": [660,880,1320].forEach((f,i)=>tone(f,.08,"sine",.07,0,i*.05)); break;
   }
 }
 // 背景音樂：很簡單的八拍循環，每關換調
-const BGM_ROOT = [0,-2,3,-5,2,-3];
+const BGM_ROOT = [0,-2,3,-5,2,5,-4,1,-1,-3];
 const BASS = [0,0,7,0,5,5,3,7], MEL = [12,null,15,14,null,12,10,null, 12,15,17,null,15,14,12,null];
 function bgmTick(){
   if(!AU.ctx||save.muted||mode!=="play"||!G) return;
@@ -346,7 +404,7 @@ function drawBody(ctx,shape,cx,cy,r,col,rand,text){
     case "button": {
       rect(ctx,cx-r*1.05,cy+r*.1,r*2.1,r*.8,"#9a9a9a",rand);
       ctx.beginPath(); ctx.ellipse(cx,cy+r*.1,r*.85,r*.75,0,Math.PI,0); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.lineWidth=2.6; ctx.strokeStyle="#222"; ctx.stroke();
-      eyes(ctx,cx,cy-r*.25,r*.55,rand,true); plainText(ctx,"贊助",cx,cy+r*.5,r*1.6,r*.5,"#fff"); return false; }
+      eyes(ctx,cx,cy-r*.25,r*.55,rand,true); plainText(ctx,(text||"贊助").slice(0,2),cx,cy+r*.5,r*1.6,r*.5,"#fff"); return false; }
     case "receipt": {
       const pts=[[cx-r*.75,cy-r*1.1],[cx+r*.75,cy-r*1.1]]; for(let i=0;i<=6;i++) pts.push([cx+r*.75-i*r*.25, cy+r*(i%2?.8:1.0)]); sketch(ctx,pts,col,rand);
       for(let i=0;i<3;i++) line(ctx,cx-r*.5,cy+r*.1+i*r*.2,cx+r*.5,cy+r*.1+i*r*.2,rand,1.2,"#999");
@@ -445,8 +503,42 @@ function drawProp(ctx,kind,cx,by,t,rand){ // by＝地面那條線
       rect(ctx,cx-22,by-84,44,32,"#2b2b2b",rand,2); rect(ctx,cx-17,by-80,34,22,"#bfe3ff",rand,1.2); rect(ctx,cx+28,by-66,22,16,"#fff",rand,1.4); break; }
   }
 }
+// 會動的場景物件：每幀現畫（用固定種子，線條不會亂抖）
+const ANIM_PROPS = { copycat:[150,130], xerox:[190,120], ctrlcv:[170,96], rename:[170,140] };
+function drawAnimProp(ctx,kind,cx,by,t,T,rand){
+  switch(kind){
+    case "copycat": { // 抄襲者坐在桌前，看一眼原作、抄一筆
+      const look=Math.sin(T*3)>0;
+      if(t){ rect(ctx,cx-60,by-128,120,26,"#fff8e0",rand,2); plainText(ctx,t,cx,by-115,110,14,"#d6322b"); }
+      oval(ctx,cx,by-78,13,13,"#ffe0c2",rand,2);
+      ctx.fillStyle="#222"; const ex=look?-4:4; ctx.beginPath(); ctx.arc(cx-4+ex,by-80,2,0,7); ctx.arc(cx+4+ex,by-80,2,0,7); ctx.fill();
+      sketch(ctx,rectPts(cx-14,by-66,28,24,rand,2),"#4a4f63",rand,2);
+      rect(ctx,cx-62,by-44,124,12,"#8a5a35",rand,2); line(ctx,cx-54,by-32,cx-54,by,rand,3); line(ctx,cx+54,by-32,cx+54,by,rand,3);
+      rect(ctx,cx-56,by-58,42,15,"#fff",rand,1.4); plainText(ctx,"原作",cx-35,by-51,38,10);
+      rect(ctx,cx+14,by-58,42,15,"#fff",rand,1.4); plainText(ctx,"我的",cx+35,by-51,38,10,"#d6322b");
+      const px=cx+35+Math.sin(T*14)*12, py=by-53+Math.cos(T*11)*3; line(ctx,cx+10,by-60,px,py,rand,2.6); line(ctx,px,py,px+5,py-12,rand,2.4,"#e0b84a");
+      line(ctx,cx-10,by-60,cx-30,by-50,rand,2.6); break; }
+    case "xerox": { // 影印機一直吐出「原創」
+      rect(ctx,cx-70,by-70,90,70,"#c9c9c9",rand); rect(ctx,cx-74,by-82,98,14,"#8f8f8f",rand,2); plainText(ctx,"COPY ×∞",cx-25,by-46,80,13,"#d6322b");
+      ctx.fillStyle=Math.floor(T*4)%2?"#2bd65a":"#d6322b"; ctx.fillRect(cx-60,by-62,8,6);
+      for(let i=0;i<3;i++){ const ph=(T*.7+i/3)%1, x=cx+20+ph*70, y=by-40-Math.sin(ph*Math.PI)*36; ctx.save(); ctx.translate(x,y); ctx.rotate(ph*1.2-.3); rect(ctx,-14,-18,28,36,"#fff",rand,1.6); plainText(ctx,t||"原創",0,0,26,10); ctx.restore(); }
+      break; }
+    case "ctrlcv": { // 大鍵盤自己按 Ctrl、C、V
+      rect(ctx,cx-80,by-40,160,40,"#9aa7b8",rand); const k=Math.floor(T*3)%3;
+      ["Ctrl","C","V"].forEach((s,i)=>{ const x=cx-70+i*50, d=k===i?5:0; rect(ctx,x,by-60+d,42,30,k===i?"#ffd34d":"#fff",rand,2); plainText(ctx,s,x+21,by-45+d,38,15); });
+      const msg=k===2?"已貼上！":k===1?"已複製":""; if(msg) label(ctx,msg,cx,by-78,16,"#d6322b"); break; }
+    case "rename": { // 有人拿刷子把招牌改一個字
+      const [a,b]=(t||"正版|政版").split("|"), ph=(T*.35)%1;
+      line(ctx,cx-50,by,cx-50,by-60,rand,4); line(ctx,cx+50,by,cx+50,by-60,rand,4); rect(ctx,cx-74,by-104,148,46,"#fff8e0",rand);
+      plainText(ctx,ph<.5?a:b,cx,by-81,134,18,ph<.5?"#222":"#d6322b");
+      if(ph>=.4&&ph<.55){ ctx.fillStyle="rgba(214,50,43,.5)"; ctx.fillRect(cx-66,by-96,132*((ph-.4)/.15),30); }
+      const hx=cx+62, hy=by-40; oval(ctx,hx+16,hy-38,11,11,"#ffe0c2",rand,2); sketch(ctx,rectPts(hx+5,hy-27,22,22,rand,2),"#6a5acd",rand,2);
+      const bx=cx-40+((ph*4)%1)*80; line(ctx,hx+8,hy-22,bx,by-75,rand,2.6); rect(ctx,bx-5,by-84,10,12,"#d6322b",rand,1.4);
+      if(ph>.5) label(ctx,"改好了，原創！",cx,by-120,13,"#d6322b"); break; }
+  }
+}
 function propSize(kind,t){ return { sign:[Math.max(90,(t||"").length*15+20)+10,110], bigphone:[110,160], lamp:[70,140], bin:[64,62], boom:[120,120], stall:[140,122], crate:[70,60], table:[160,72], machine:[90,104], plant:[90,96], tent:[150,96], pile:[72,70], rack:[70,128], desk:[124,92] }[kind]; }
-function makeProp(kind,t,seed){ const [w,h]=propSize(kind,t); const cv=document.createElement("canvas"); cv.width=Math.ceil(w*SS); cv.height=Math.ceil((h+4)*SS); const c=cv.getContext("2d"); c.scale(SS,SS); drawProp(c,kind,w/2,h,t||"",rng(seed)); return { cv, w, h }; }
+function makeProp(kind,t,seed){ if(ANIM_PROPS[kind]){ const [w,h]=ANIM_PROPS[kind]; return { anim:true, kind, t:t||"", w, h, seed }; } const [w,h]=propSize(kind,t); const cv=document.createElement("canvas"); cv.width=Math.ceil(w*SS); cv.height=Math.ceil((h+4)*SS); const c=cv.getContext("2d"); c.scale(SS,SS); drawProp(c,kind,w/2,h,t||"",rng(seed)); return { cv, w, h }; }
 
 // ---------------- 主角畫法 ----------------
 function drawHero(ctx,id,cx,cy,s,rand){
@@ -493,26 +585,45 @@ let G=null; let mode="menu"; let selHero="mr";
 function newGame(stageIdx){
   auInit();
   const hero=HEROES.find(h=>h.id===selHero);
-  G={ stage:stageIdx, st:STAGES[stageIdx], hero, t:0, kills:0, lv:1, xp:0, xpNeed:5,
+  G={ stage:stageIdx, st:STAGES[stageIdx], hero, t:0, kills:0, lv:1, xp:0, xpNeed:4,
     p:{ x:0, y:0, hp:hero.hp, maxHp:hero.hp, face:1, fx:1, fy:0, inv:0, moved:0 },
     weapons:{}, passives:{}, wt:{}, orbAng:0, beamAng:0,
     enemies:[], bullets:[], ebullets:[], gems:[], fx:[], texts:[], pickups:[], fires:[], sweeps:[], marks:[],
-    spawnAcc:0, boss:null, bossSpawned:false, won:false, shake:0, msg:null, layout:makeLayout(stageIdx) };
+    spawnAcc:0, boss:null, bossSpawned:false, won:false, shake:0, msg:null, layout:makeLayout(stageIdx),
+    bubbles:[], sayT:1.2, esayT:2.5, ultT:12, ultFx:null };
   addWeapon(hero.weapon);
   if(hero.id==="mr") G.weapons.silence=1;
   mode="play"; ui.innerHTML=""; pauseBtn.style.display=muteBtn.style.display="block";
   showMsg(G.st.name, G.st.sub);
+  const sp0=G.st.spawn.filter(s=>s[2]===0); for(let i=0;i<14;i++){ const a=R()*6.283, d=viewRadius()*(.75+R()*.3); spawnEnemy(sp0[(R()*sp0.length)|0][0],Math.cos(a)*d,Math.sin(a)*d); } // 一開場就有怪
+}
+function say(who,txt,dur){ G.bubbles=G.bubbles.filter(b=>b.who!==who); G.bubbles.push({ who, txt, t:dur||2.2 }); if(G.bubbles.length>5) G.bubbles.shift(); }
+function updateTalk(dt){
+  for(const b of G.bubbles) b.t-=dt; G.bubbles=G.bubbles.filter(b=>b.t>0&&(b.who==="p"||!b.who.dead));
+  G.sayT-=dt; if(G.sayT<=0){ G.sayT=3.5+R()*3; const L=G.hero.lines; say("p",L[(R()*L.length)|0],2.2); }
+  G.esayT-=dt; if(G.esayT<=0){ G.esayT=1.8+R()*2; const vr=viewRadius()*.7;
+    for(let k=0;k<10&&G.enemies.length;k++){ const e=G.enemies[(R()*G.enemies.length)|0]; if(!e.dead&&!e.boss&&dist2(e.x,e.y,G.p.x,G.p.y)<vr*vr){ say(e,ENEMY_LINES[(R()*ENEMY_LINES.length)|0],2); break; } } }
+  G.ultT-=dt; if(G.ultT<=0){ G.ultT=20; doUlt(); }
+}
+function doUlt(){ // 必殺：每 20 秒自動放一次，打整個畫面
+  const u=G.hero.ult, p=G.p, dmg=40+G.lv*9, hw=W/ZOOM/2+40, hh=H/ZOOM/2+80;
+  G.ultFx={ txt:u.name, col:u.col, t:1.5 }; G.shake=.5; sfx("evo"); say("p",u.name,2);
+  for(const e of [...G.enemies]){ if(e.dead) continue; const dx=e.x-p.x, dy=e.y-p.y; if(Math.abs(dx)>hw||Math.abs(dy)>hh) continue; const L=Math.hypot(dx,dy)||1;
+    if(u.kind==="freeze"){ e.frozen=2.5; hitEnemy(e,dmg*.7,0,0); }
+    else if(u.kind==="push") hitEnemy(e,dmg*.8,dx/L*900,dy/L*900);
+    else if(u.kind!=="orange") hitEnemy(e,dmg,dx/L*220,dy/L*220); }
+  if(u.kind==="orange") for(let i=0;i<16;i++){ const tg=G.enemies[(R()*G.enemies.length)|0]; const ok=tg&&!tg.dead; const tx=ok?tg.x:p.x+(R()-.5)*hw*2, ty=ok?tg.y:p.y+(R()-.5)*hh*2; G.bullets.push({ k:"orange", sx:p.x, sy:p.y, tx, ty, t:0, T:.35+R()*.5, r:95, dmg }); }
 }
 function makeLayout(si){ // 每 1400×1400 一塊，塊裡的物件位置固定
   const r=rng(si*999+3), props=[], words=[]; const n=PROPS[si].length, wl=["抄","正版?","盜版","讚","+1","XD","？？","吵","官方","☕","!!"];
-  for(let i=0;i<22;i++) props.push({ x:r()*1400, y:r()*1400, k:(r()*n)|0 });
+  for(let i=0;i<30;i++) props.push({ x:r()*1400, y:r()*1400, k:(r()*n)|0 });
   for(let i=0;i<36;i++) words.push({ x:r()*1400, y:r()*1400, w:wl[(r()*wl.length)|0], rot:(r()-.5)*.6, s:14+r()*14 });
   return { props, words, T:1400 };
 }
 function showMsg(a,b){ G.msg={ a, b, t:2.6 }; }
-const stat=()=>{ const P=G.passives; return {
-  dmg: 1+0.15*(P.dmg||0), cd: Math.pow(0.92,P.cd||0), spd: 1+0.1*(P.spd||0), mag: 1+0.35*(P.mag||0), xp: 1+0.15*(P.xp||0),
-  area: 1+0.12*(P.area||0), proj: P.proj||0, regen: 0.6*(P.regen||0) }; };
+const stat=()=>{ const P=G.passives, m=G.hero.mod||{}; return {
+  dmg: 1+0.15*(P.dmg||0)+(m.dmg||0), cd: Math.pow(0.92,P.cd||0)*(1-(m.cd||0)), spd: 1+0.1*(P.spd||0), mag: 1+0.35*(P.mag||0), xp: 1+0.15*(P.xp||0)+(m.xp||0),
+  area: 1+0.12*(P.area||0)+(m.area||0), proj: (P.proj||0)+(m.proj||0), regen: 0.6*(P.regen||0)+(m.regen||0), armor: m.armor||0 }; };
 function addWeapon(id){ G.weapons[id]=(G.weapons[id]||0)+1; G.wt[id]=G.wt[id]||0; }
 
 // ---------------- 輸入 ----------------
@@ -541,16 +652,16 @@ function nearest(x,y,maxR,skip){ let best=null, bd=maxR*maxR; for(const e of G.e
 // ---------------- 怪物 ----------------
 function viewRadius(){ return Math.hypot(W,H)/2/ZOOM; }
 function spawnEnemy(type,x,y,opts){
-  const d=ENEMIES[type]; const tScale=1+G.t/180, sScale=1+G.stage*0.1;
+  const d=ENEMIES[type]; const tScale=1+G.t/80, sScale=1+G.stage*0.09;
   const e={ type, d, spr:SPR[type], x, y, r:d.r, hp:d.hp*tScale*sScale, maxHp:0, spd:d.spd*(0.9+R()*0.2), dmg:d.dmg*0.7*(1+G.stage*0.07),
     xp:d.xp*(1+G.stage*0.25), beh:d.beh||"chase", t:R()*3, flash:0, kx:0, ky:0, hitT:{}, dead:false, vx:0, vy:0, frame:R()<.5?0:1, slow:0, ft:R() };
   e.maxHp=e.hp; if(opts) Object.assign(e,opts); G.enemies.push(e); return e;
 }
 function spawnTick(dt){
   if(G.enemies.length>340) return;
-  const rate=(1.1+G.t*0.032)*(1+G.stage*0.07)*(G.bossSpawned?0.4:1);
+  const rate=(3.2+G.t*0.11)*(1+G.stage*0.05)*(G.bossSpawned?0.45:1);
   G.spawnAcc+=rate*dt;
-  const pool=G.st.spawn.filter(s=>G.t>=s[2]); const tot=pool.reduce((a,s)=>a+s[1],0);
+  const pool=G.st.spawn.filter(s=>G.t>=s[2]*STAGE_TIME/150); const tot=pool.reduce((a,s)=>a+s[1],0);
   while(G.spawnAcc>=1){
     G.spawnAcc-=1; let r=R()*tot, type=pool[0][0]; for(const s of pool){ r-=s[1]; if(r<=0){ type=s[0]; break; } }
     const a=R()*6.283, dd=viewRadius()+40;
@@ -566,7 +677,7 @@ function spawnBoss(){
   const b=BOSSES[G.st.boss], a=R()*6.283, dd=viewRadius()*.8;
   const e={ type:"B_"+G.st.boss, d:b, spr:SPR["B_"+G.st.boss], boss:true, x:G.p.x+Math.cos(a)*dd, y:G.p.y+Math.sin(a)*dd, r:b.r,
     hp:b.hp, maxHp:b.hp, spd:b.spd, dmg:b.dmg, xp:0, beh:"boss", t:0, ph:0, flash:0, kx:0, ky:0, hitT:{}, dead:false, frame:0, slow:0, ft:0 };
-  G.enemies.push(e); G.boss=e; G.bossSpawned=true; G.shake=.6; showMsg("BOSS 出現！", b.name); sfx("boss");
+  G.enemies.push(e); G.boss=e; G.bossSpawned=true; G.shake=.6; showMsg("BOSS 出現！", b.name); sfx("boss"); if(b.line) say(e,b.line,3.5);
 }
 function hitEnemy(e,dmg,kx,ky){
   if(e.dead) return; const v=dmg*stat().dmg*(0.9+R()*0.2);
@@ -590,12 +701,12 @@ function updateEnemies(dt){
     if(e.dead) continue;
     e.t+=dt; e.flash-=dt; e.slow-=dt;
     let dx=p.x-e.x, dy=p.y-e.y; const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
-    let sp=e.spd*(e.slow>0?.4:1);
+    let sp=e.spd*(e.slow>0?.4:1); if(e.frozen>0){ e.frozen-=dt; sp=0; }
     if(e.beh==="line"){ e.x+=e.vx*sp*1.1*dt; e.y+=e.vy*sp*1.1*dt; e.life-=dt; if(e.life<=0) e.dead=true; }
     else {
       if(e.beh==="dash"){ const c=e.t%3.2; if(c>2.5) sp*=3.2; else if(c>2.1) sp*=.15; }
       if(e.beh==="shoot" && e.t>2.6){ e.t=0; if(L<520) G.ebullets.push({ x:e.x, y:e.y, vx:dx*170, vy:dy*170, r:9, dmg:e.dmg*.8, life:4, txt:e.d.shot }); }
-      if(e.beh==="boss") bossAI(e);
+      if(e.beh==="boss"&&!(e.frozen>0)) bossAI(e);
       e.x+=dx*sp*dt; e.y+=dy*sp*dt;
     }
     e.x+=e.kx*dt; e.y+=e.ky*dt; e.kx*=Math.pow(.02,dt); e.ky*=Math.pow(.02,dt);
@@ -628,6 +739,11 @@ function wpar(id,lv){ const s=stat(), A=s.area, P=s.proj, E=lv>=6;
     case "chain":     return { cd:(E?.5:Math.max(.6,1.6-lv*.15))*s.cd, n:(E?12:2+lv)+P, dmg:E?50:20+lv*6 };
     case "block":     return { cd:(E?2.0:3.2)*s.cd, r:(E?300:120+lv*20)*A, dmg:E?45:10+lv*5, kb:E?900:500 };
     case "call":      return { cd:(E?1.0:2.0)*s.cd, arc:E?Math.PI:.9, r:(E?270:150+lv*20)*A, dmg:E?40:14+lv*5 };
+    case "snap":      return { cd:(E?1.8:3.4-lv*.25)*s.cd, w:(150+lv*22)*A, h:(100+lv*15)*A, dmg:E?55:20+lv*7, full:E };
+    case "report":    return { cd:(E?.7:Math.max(.7,1.5-lv*.12))*s.cd, n:(E?8:1+Math.floor(lv/3))+P, dmg:E?40:14+lv*5 };
+    case "dmca":      return { cd:(E?.55:1.9-lv*.16)*s.cd, n:(E?4:1+Math.floor(lv/3))+P, dmg:E?75:26+lv*8, r:(E?115:55+lv*7)*A };
+    case "undo":      return { cd:(E?3.0:7-lv*.5)*s.cd, r:(E?280:110+lv*18)*A, dmg:E?55:16+lv*6 };
+    case "star":      return { cd:(E?.12:Math.max(.25,.75-lv*.09))*s.cd, r:(E?52:30+lv*4)*A, dmg:E?42:14+lv*5, n:E?2:1 };
   } }
 function fireWeapons(dt){
   const p=G.p;
@@ -656,6 +772,16 @@ function fireWeapons(dt){
           for(let i=0;i<w.n;i++){ const tg=nearest(from.x,from.y,i?170:400,hit); if(!tg) break; hit.add(tg); hitEnemy(tg,w.dmg,0,0); pts.push([tg.x,tg.y-tg.r]); from=tg; }
           if(pts.length>1){ G.fx.push({ k:"zap", pts, t:.18 }); sfx("zap"); } } break;
       case "block": if(ready){ G.fx.push({ k:"block", x:p.x, y:p.y, r:w.r, t:.4 }); query(p.x,p.y,w.r,e=>{ const dx=e.x-p.x, dy=e.y-p.y, L=Math.hypot(dx,dy)||1; hitEnemy(e,w.dmg,dx/L*w.kb,dy/L*w.kb); }); sfx("boom"); } break;
+      case "snap": if(ready){ let x=p.x, y=p.y, ww=w.w, hh=w.h; if(w.full){ ww=W/ZOOM; hh=H/ZOOM; } else { const tg=nearest(p.x,p.y,420); if(tg){ x=tg.x; y=tg.y; } }
+          for(const e of [...G.enemies]){ if(!e.dead && Math.abs(e.x-x)<ww/2 && Math.abs(e.y-y)<hh/2){ e.frozen=Math.max(e.frozen||0,.7); hitEnemy(e,w.dmg,0,0); } }
+          G.fx.push({ k:"snap", x, y, w:ww, h:hh, t:.4 }); sfx("snap"); } break;
+      case "report": if(ready){ const tg=nearest(p.x,p.y,500); const base=tg?Math.atan2(tg.y-p.y,tg.x-p.x):Math.atan2(p.fy,p.fx);
+          for(let i=0;i<w.n;i++){ const a=w.n>=8? i/w.n*6.283 : base+(i-(w.n-1)/2)*.3; G.bullets.push({ k:"flag", x:p.x, y:p.y, vx:Math.cos(a)*520, vy:Math.sin(a)*520, dmg:w.dmg, r:13, life:1.3, pierce:999, hitk:"rp" }); } sfx("shoot"); } break;
+      case "dmca": if(ready){ for(let i=0;i<w.n;i++){ const a=R()*6.283; G.bullets.push({ k:"dmca", x:p.x, y:p.y, vx:Math.cos(a)*220, vy:Math.sin(a)*220, sp:340, dmg:w.dmg, r:10, br:w.r, life:3.2, pierce:1, homing:true }); } sfx("shoot"); } break;
+      case "undo": if(ready){ const vr=viewRadius(); query(p.x,p.y,w.r,e=>{ hitEnemy(e,w.dmg,0,0); if(!e.dead&&!e.boss){ const a=R()*6.283; e.x=p.x+Math.cos(a)*(vr+30); e.y=p.y+Math.sin(a)*(vr+30); e.kx=e.ky=0; } });
+          G.fx.push({ k:"undo", x:p.x, y:p.y, r:w.r, t:.45 }); sfx("erase"); } break;
+      case "star": if(ready){ for(let i=0;i<w.n;i++){ const hw=W/ZOOM/2, hh=H/ZOOM/2; let x=p.x+(R()-.5)*hw*1.8, y=p.y+(R()-.5)*hh*1.6; const tg=nearest(x,y,160); if(tg){ x=tg.x; y=tg.y; }
+          G.bullets.push({ k:"star", x, y, t:0, T:.42, r:w.r, dmg:w.dmg }); } } break;
       case "call": if(ready){ const base=Math.atan2(p.fy,p.fx); G.fx.push({ k:"call", x:p.x, y:p.y, a:base, arc:w.arc, r:w.r, t:.45 });
           query(p.x,p.y,w.r,e=>{ let da=Math.atan2(e.y-p.y,e.x-p.x)-base; da=Math.atan2(Math.sin(da),Math.cos(da)); if(Math.abs(da)<=w.arc){ e.slow=1.5; hitEnemy(e,w.dmg,Math.cos(base)*120,Math.sin(base)*120); } }); sfx("ring"); } break;
     }
@@ -666,12 +792,15 @@ function updateBullets(dt){
   for(const b of G.bullets){
     if(b.dead) continue;
     if(b.k==="orange"){ b.t+=dt; if(b.t>=b.T){ b.dead=true; G.fx.push({ k:"boom", x:b.tx, y:b.ty, r:b.r, t:.35 }); sfx("boom"); query(b.tx,b.ty,b.r,e=>{ const dx=e.x-b.tx, dy=e.y-b.ty, L=Math.hypot(dx,dy)||1; hitEnemy(e,b.dmg,dx/L*220,dy/L*220); }); } continue; }
+    if(b.k==="star"){ b.t+=dt; if(b.t>=b.T){ b.dead=true; G.fx.push({ k:"star", x:b.x, y:b.y, r:b.r, t:.3 }); query(b.x,b.y,b.r,e=>{ hitEnemy(e,b.dmg,0,0); }); } continue; }
     if(b.k==="stamp"){ b.t+=dt; if(b.t>=b.T){ b.dead=true; G.marks.push({ x:b.x, y:b.y, r:b.r, t:1.2 }); G.shake=Math.max(G.shake,.3); sfx("stamp"); query(b.x,b.y,b.r,e=>{ hitEnemy(e,b.dmg,0,0); }); } continue; }
     b.life-=dt; if(b.life<=0){ b.dead=true; continue; }
     if(b.homing){ const tg=nearest(b.x,b.y,420); if(tg){ const dx=tg.x-b.x, dy=tg.y-b.y, L=Math.hypot(dx,dy)||1; b.vx+=(dx/L*b.sp-b.vx)*Math.min(1,dt*5); b.vy+=(dy/L*b.sp-b.vy)*Math.min(1,dt*5); } }
     if(b.boomer){ b.t+=dt; if(b.t>.45){ const dx=p.x-b.x, dy=p.y-b.y, L=Math.hypot(dx,dy)||1; b.vx+=dx/L*1500*dt; b.vy+=dy/L*1500*dt; if(b.t>.7&&L<24) b.dead=true; } }
     b.x+=b.vx*dt; b.y+=b.vy*dt;
     query(b.x,b.y,b.r,e=>{
+      if(b.k==="dmca"){ b.dead=true; G.fx.push({ k:"boom", x:b.x, y:b.y, r:b.br, t:.35, txt:"DMCA" }); sfx("boom"); query(b.x,b.y,b.br,q=>{ const dx=q.x-b.x, dy=q.y-b.y, L=Math.hypot(dx,dy)||1; hitEnemy(q,b.dmg,dx/L*200,dy/L*200); }); return false; }
+      if(b.hitk){ if((e.hitT[b.hitk]||0)>G.t) return; e.hitT[b.hitk]=G.t+.5; }
       if(b.boomer){ if((e.hitT.tk||0)>G.t) return; e.hitT.tk=G.t+.4; }
       const L=Math.hypot(b.vx,b.vy)||1; hitEnemy(e,b.dmg,b.vx/L*120,b.vy/L*120); b.pierce--; if(b.pierce<=0){ b.dead=true; return false; } });
   }
@@ -687,7 +816,7 @@ function updateBullets(dt){
 }
 
 // ---------------- 玩家 ----------------
-function hurtPlayer(d){ const p=G.p; if(p.inv>0||mode!=="play") return; p.hp-=d; p.inv=.6; G.shake=Math.max(G.shake,.25); sfx("hurt"); if(p.hp<=0){ p.hp=0; endGame(false); } }
+function hurtPlayer(d){ const p=G.p; if(p.inv>0||mode!=="play") return; d*=1-stat().armor; p.hp-=d; p.inv=.6; G.shake=Math.max(G.shake,.25); sfx("hurt"); if(p.hp<=0){ p.hp=0; endGame(false); } }
 function updatePlayer(dt){
   const p=G.p, s=stat(); let mx=0,my=0;
   if(keys["a"]||keys["arrowleft"]) mx--; if(keys["d"]||keys["arrowright"]) mx++; if(keys["w"]||keys["arrowup"]) my--; if(keys["s"]||keys["arrowdown"]) my++;
@@ -705,7 +834,7 @@ function updatePlayer(dt){
     else { for(const g of G.gems) g.pull=true; G.texts.push({ x:p.x, y:p.y-60, t:1, s:"全部吸過來" }); } } }
   G.pickups=G.pickups.filter(k=>!k.dead);
 }
-function gainXp(v){ G.xp+=v*stat().xp; if(G.xp>=G.xpNeed && mode==="play"){ G.xp-=G.xpNeed; G.lv++; G.xpNeed=Math.round(4+G.lv*2.6+Math.pow(G.lv,1.32)); levelUp(); } }
+function gainXp(v){ G.xp+=v*stat().xp; if(G.xp>=G.xpNeed && mode==="play"){ G.xp-=G.xpNeed; G.lv++; G.xpNeed=Math.round(3+G.lv*2.1+Math.pow(G.lv,1.28)); levelUp(); } }
 
 // ---------------- 升級（四選一，可以超進化） ----------------
 function levelUp(){
@@ -744,7 +873,7 @@ function step(dt){
   G.t+=dt;
   if(!G.bossSpawned && G.t>=STAGE_TIME) spawnBoss();
   buildGrid(); spawnTick(dt); updatePlayer(dt); if(mode!=="play") return;
-  updateEnemies(dt); buildGrid(); fireWeapons(dt); updateBullets(dt);
+  updateEnemies(dt); buildGrid(); fireWeapons(dt); updateBullets(dt); updateTalk(dt); if(G.ultFx){ G.ultFx.t-=dt; if(G.ultFx.t<=0) G.ultFx=null; }
   G.enemies=G.enemies.filter(e=>!e.dead);
   for(const f of G.fx){ f.t-=dt; if(f.vx){ f.x+=f.vx*dt; f.y+=f.vy*dt; } } G.fx=G.fx.filter(f=>f.t>0);
   for(const t of G.texts){ t.t-=dt; t.y-=40*dt; } G.texts=G.texts.filter(t=>t.t>0);
@@ -780,7 +909,7 @@ function draw(){
   list.sort((a,b)=>a.y-b.y);
   const hs=HSPR[G.hero.id];
   for(const it of list){
-    if(it.k===0){ ctx.drawImage(it.pr.cv,snap(it.x-it.pr.w/2),snap(it.y-it.pr.h),it.pr.w,it.pr.h+4); }
+    if(it.k===0){ if(it.pr.anim) drawAnimProp(ctx,it.pr.kind,snap(it.x),snap(it.y),it.pr.t,G.t,rng(it.pr.seed)); else ctx.drawImage(it.pr.cv,snap(it.x-it.pr.w/2),snap(it.y-it.pr.h),it.pr.w,it.pr.h+4); }
     else if(it.k===1){ const e=it.e, s=SPR[e.type], im=s.frames[e.frame], fl=e.d.fly?Math.sin(G.t*4+e.x)*4-10:0;
       if(e.flash>0) ctx.globalAlpha=.5; ctx.drawImage(im,snap(e.x-s.w/2),snap(e.y-s.footY+fl),s.w,s.h); ctx.globalAlpha=1; }
     else if(it.k===2){ const bob=p.moving?Math.abs(Math.sin(G.t*12))*3:0; if(p.inv>0 && Math.floor(G.t*20)%2) ctx.globalAlpha=.4;
@@ -795,9 +924,18 @@ function draw(){
     ctx.fillStyle="#d6322b"; ctx.beginPath(); ctx.arc(b.x,by,vr,0,7); ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle="#222"; ctx.stroke();
     if(b.txt) fitLabel(ctx,b.txt,b.x,by,vr*2.4,13,"#fff","#222"); }
   drawFx();
+  for(const b of G.bubbles){ let x,y,sz;
+    if(b.who==="p"){ x=p.x; y=p.y-66; sz=15; } else { const e=b.who; x=e.x; y=e.y-SPR[e.type].footY+(e.d.fly?-10:0)+4; sz=e.boss?17:13; }
+    drawBubble(x,y,b.txt,sz,b.who==="p"); }
   for(const t of G.texts) label(ctx,String(t.s),t.x,t.y,typeof t.s==="number"?14:16,typeof t.s==="number"?"#222":"#d6322b");
   ctx.restore();
   drawHud();
+}
+function drawBubble(x,y,txt,sz,hero){
+  ctx.font=`900 ${sz}px ${FONT}`; const w=Math.ceil(ctx.measureText(txt).width)+18, h=sz+12, bx=snap(x-w/2), by=snap(y-h-10);
+  ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+w,by); ctx.lineTo(bx+w,by+h); ctx.lineTo(x+7,by+h); ctx.lineTo(x,by+h+10); ctx.lineTo(x-3,by+h); ctx.lineTo(bx,by+h); ctx.closePath();
+  ctx.fillStyle=hero?"#fff":"#fffbe6"; ctx.fill(); ctx.lineWidth=hero?3:2.2; ctx.strokeStyle=hero?"#d6322b":"#222"; ctx.stroke();
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillStyle=hero?"#d6322b":"#222"; ctx.fillText(txt,snap(x),by+h/2+1);
 }
 function drawGround(p,vw,vh){
   // 地磚：橫向壓扁的格子，看起來像斜著看地板
@@ -829,6 +967,9 @@ function drawWeapons(p){
       const sw=b.r*.9; ctx.fillStyle="#8a5a35"; ctx.fillRect(b.x-sw*.18,b.y-h-sw*.9,sw*.36,sw*.6); ctx.fillStyle="#d6322b"; ctx.fillRect(b.x-sw/2,b.y-h-sw*.35,sw,sw*.35); ctx.lineWidth=2.5; ctx.strokeStyle="#222"; ctx.strokeRect(b.x-sw/2,b.y-h-sw*.35,sw,sw*.35); ctx.strokeRect(b.x-sw*.18,b.y-h-sw*.9,sw*.36,sw*.6); }
     else if(b.k==="pew"){ ctx.fillStyle="#3a7bd5"; ctx.beginPath(); ctx.arc(b.x,b.y-LIFT-20,4,0,7); ctx.fill(); }
     else if(b.k==="ticket"){ ctx.save(); ctx.translate(b.x,b.y-LIFT); ctx.rotate(G.t*12); const s=b.big?1.8:1; ctx.scale(s,s); ctx.fillStyle="#ffd34d"; ctx.fillRect(-12,-8,24,16); ctx.lineWidth=2; ctx.strokeStyle="#222"; ctx.strokeRect(-12,-8,24,16); ctx.font=`900 ${b.big?8:10}px ${FONT}`; ctx.fillStyle="#222"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(b.big?"9999":"087",0,0); ctx.restore(); }
+    else if(b.k==="flag"){ ctx.save(); ctx.translate(b.x,b.y-LIFT); ctx.rotate(Math.atan2(b.vy,b.vx)); ctx.lineWidth=2.5; ctx.strokeStyle="#222"; ctx.beginPath(); ctx.moveTo(-14,8); ctx.lineTo(12,8); ctx.stroke(); ctx.fillStyle="#d6322b"; ctx.beginPath(); ctx.moveTo(-10,8); ctx.lineTo(-10,-12); ctx.lineTo(10,-6); ctx.lineTo(-10,0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); label(ctx,"檢舉",b.x,b.y-LIFT-20,11,"#d6322b"); }
+    else if(b.k==="dmca"){ ctx.save(); ctx.translate(b.x,b.y-LIFT); ctx.rotate(Math.atan2(b.vy,b.vx)); ctx.fillStyle="#eee"; ctx.fillRect(-14,-6,24,12); ctx.fillStyle="#d6322b"; ctx.beginPath(); ctx.moveTo(10,-6); ctx.lineTo(18,0); ctx.lineTo(10,6); ctx.closePath(); ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle="#222"; ctx.strokeRect(-14,-6,24,12); ctx.fillStyle="#ff8a2b"; ctx.fillRect(-20,-3,6,6); ctx.restore(); }
+    else if(b.k==="star"){ const k=b.t/b.T, h=(1-k)*240; ctx.strokeStyle="rgba(214,50,43,.45)"; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.ellipse(b.x,b.y,b.r,b.r*.5,0,0,7); ctx.stroke(); ctx.setLineDash([]); label(ctx,"★",b.x,b.y-h-LIFT,26,"#ffd34d","#222"); }
     else if(b.k==="card"){ ctx.save(); ctx.translate(b.x,b.y-LIFT); ctx.rotate(b.rot); ctx.fillStyle="#f08a24"; ctx.fillRect(-9,-6,18,12); ctx.lineWidth=1.8; ctx.strokeStyle="#222"; ctx.strokeRect(-9,-6,18,12); ctx.restore(); }
   }
   for(const s of G.sweeps){ const ew=60, eh=Math.max(40,s.h*.6); ctx.fillStyle="rgba(240,160,180,.25)"; ctx.fillRect(s.x0,s.y-s.h/2,s.x-s.x0,s.h);
@@ -838,11 +979,14 @@ function drawFx(){
   for(const f of G.fx){
     if(f.k==="poof"){ ctx.strokeStyle="rgba(34,34,34,"+f.t*3+")"; ctx.lineWidth=2; for(let i=0;i<5;i++){ const a=i*1.26, r=f.r*(1.6-f.t*2.4); ctx.beginPath(); ctx.moveTo(f.x+Math.cos(a)*r*.5,f.y+Math.sin(a)*r*.5); ctx.lineTo(f.x+Math.cos(a)*r,f.y+Math.sin(a)*r); ctx.stroke(); } }
     else if(f.k==="ring"){ ctx.strokeStyle="rgba(34,34,34,"+f.t*1.5+")"; ctx.lineWidth=3; const r=f.r*(1.1-f.t*.6); ctx.beginPath(); ctx.ellipse(f.x,f.y,r,r*.6,0,0,7); ctx.stroke(); ctx.globalAlpha=Math.min(1,f.t*2); label(ctx,"……",f.x+r*.6,f.y-r*.5,18); ctx.globalAlpha=1; }
-    else if(f.k==="boom"){ ctx.fillStyle="rgba(247,162,52,"+f.t*1.6+")"; const r=f.r*(1.2-f.t); ctx.beginPath(); ctx.ellipse(f.x,f.y,r,r*.6,0,0,7); ctx.fill(); label(ctx,"砰",f.x,f.y-20,24,"#d6322b"); }
+    else if(f.k==="boom"){ ctx.fillStyle="rgba(247,162,52,"+f.t*1.6+")"; const r=f.r*(1.2-f.t); ctx.beginPath(); ctx.ellipse(f.x,f.y,r,r*.6,0,0,7); ctx.fill(); label(ctx,f.txt||"砰",f.x,f.y-20,f.txt?18:24,"#d6322b"); }
     else if(f.k==="spark"){ ctx.fillStyle="#d6322b"; ctx.fillRect(f.x-3,f.y-3,6,6); }
     else if(f.k==="zap"){ ctx.lineJoin="round"; for(let pass=0;pass<2;pass++){ ctx.strokeStyle=pass?"#222":"#ffe14d"; ctx.lineWidth=pass?2:6; ctx.beginPath(); ctx.moveTo(f.pts[0][0],f.pts[0][1]); for(let i=1;i<f.pts.length;i++){ const [a,b]=f.pts[i-1],[c,d]=f.pts[i]; ctx.lineTo((a+c)/2+(R()-.5)*30,(b+d)/2+(R()-.5)*30); ctx.lineTo(c,d); } ctx.stroke(); }
       label(ctx,"傳票",f.pts[1][0],f.pts[1][1]-20,14,"#3a4ad5"); }
     else if(f.k==="block"){ const r=f.r*(1-f.t*1.6+.36); ctx.strokeStyle="rgba(214,50,43,"+Math.min(1,f.t*2)+")"; ctx.lineWidth=8; ctx.beginPath(); ctx.ellipse(f.x,f.y,Math.max(1,r),Math.max(1,r*.6),0,0,7); ctx.stroke(); ctx.globalAlpha=Math.min(1,f.t*2.5); label(ctx,"封鎖",f.x,f.y-r*.6-12,20,"#d6322b"); ctx.globalAlpha=1; }
+    else if(f.k==="snap"){ ctx.globalAlpha=Math.min(1,f.t*2.5); ctx.fillStyle="rgba(255,255,255,.55)"; ctx.fillRect(f.x-f.w/2,f.y-f.h/2,f.w,f.h); ctx.lineWidth=5; ctx.strokeStyle="#222"; ctx.strokeRect(f.x-f.w/2,f.y-f.h/2,f.w,f.h); label(ctx,"已截圖",f.x,f.y-f.h/2-12,16,"#d6322b"); ctx.globalAlpha=1; }
+    else if(f.k==="undo"){ ctx.strokeStyle="rgba(58,123,213,"+Math.min(1,f.t*2)+")"; ctx.lineWidth=5; const r=f.r*(1.15-f.t); ctx.beginPath(); ctx.ellipse(f.x,f.y,r,r*.6,0,0,7); ctx.stroke(); ctx.globalAlpha=Math.min(1,f.t*2.5); label(ctx,"Ctrl+Z 復原",f.x,f.y-r*.6-14,18,"#3a7bd5"); ctx.globalAlpha=1; }
+    else if(f.k==="star"){ ctx.globalAlpha=Math.min(1,f.t*3); ctx.fillStyle="rgba(255,211,77,.6)"; ctx.beginPath(); ctx.ellipse(f.x,f.y,f.r,f.r*.5,0,0,7); ctx.fill(); label(ctx,"一星",f.x,f.y-16,14,"#d6322b"); ctx.globalAlpha=1; }
     else if(f.k==="call"){ ctx.strokeStyle="rgba(58,123,213,"+Math.min(1,f.t*2)+")"; ctx.lineWidth=4; for(let i=1;i<=3;i++){ const r=f.r*(i/3)*(1.2-f.t); ctx.beginPath(); ctx.ellipse(f.x,f.y,r,r*.6,0,f.a-f.arc,f.a+f.arc); ctx.stroke(); }
       ctx.globalAlpha=Math.min(1,f.t*3); label(ctx,"轉接中…",f.x+Math.cos(f.a)*f.r*.6,f.y+Math.sin(f.a)*f.r*.35-30,15,"#3a7bd5"); ctx.globalAlpha=1; }
   }
@@ -855,6 +999,8 @@ function drawHud(){
   const rem=Math.max(0,STAGE_TIME-G.t), mm=Math.floor(rem/60), ss=Math.floor(rem%60);
   label(ctx,G.bossSpawned?"BOSS 戰":`${mm}:${String(ss).padStart(2,"0")}`,W/2,top+32,22,G.bossSpawned?"#d6322b":"#222");
   label(ctx,`擊倒 ${G.kills}`,48,top+52,13);
+  bar(12,top+64,72,8,1-G.ultT/20,"#d6322b"); label(ctx,G.ultT<1.5?"必殺！":"必殺",100,top+68,11,"#d6322b");
+  if(G.ultFx){ const f=G.ultFx, k=f.t/1.5; ctx.globalAlpha=Math.min(1,f.t*2); label(ctx,f.txt,W/2,H*.42,clamp(W/7,40,96)*(1+(1-k)*.15),f.col,"#fff"); ctx.globalAlpha=1; }
   if(G.boss){ const b=G.boss; bar(W*.15,top+50,W*.7,14,b.hp/b.maxHp,"#7a3b5c"); label(ctx,b.d.name,W/2,top+57,13,"#fff","#222"); }
   if(G.msg){ const a=Math.min(1,G.msg.t*2); ctx.globalAlpha=a; label(ctx,G.msg.a,W/2,H*.3,clamp(W/12,26,46),"#222"); label(ctx,G.msg.b,W/2,H*.3+42,clamp(W/26,14,22),"#d6322b"); ctx.globalAlpha=1; }
   if(joy.on){ ctx.strokeStyle="rgba(34,34,34,.35)"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(joy.ox,joy.oy,50,0,7); ctx.stroke(); const dx=joy.x-joy.ox, dy=joy.y-joy.oy, L=Math.hypot(dx,dy), k=L>50?50/L:1; ctx.fillStyle="rgba(34,34,34,.3)"; ctx.beginPath(); ctx.arc(joy.ox+dx*k,joy.oy+dy*k,20,0,7); ctx.fill(); }
@@ -869,12 +1015,12 @@ function paintHeroCanvases(){ ui.querySelectorAll("canvas[data-hero]").forEach(c
 function showTitle(){
   G=null; mode="menu"; pauseBtn.style.display="none"; muteBtn.style.display="block";
   ui.innerHTML=`<div class="screen"><h1>抄襲<span>倖存者</span></h1><div class="sub">所有人都在抄倖存者，那就讓被抄的人來打。</div>
-    <button class="red" id="go">開始</button><div class="note">電腦：WASD／方向鍵移動，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.0　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
+    <button class="red" id="go">開始</button><div class="note">電腦：WASD／方向鍵移動，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.1　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
   document.getElementById("go").onclick=showHeroes;
 }
 function showHeroes(){
   ui.innerHTML=`<div class="screen"><h2>選主角</h2><div class="grid">${HEROES.map(h=>{ const lock=h.hidden&&!save.origin;
-    return `<div class="card ${lock?"locked":""} ${selHero===h.id?"sel":""}" data-id="${h.id}">${lock?`<canvas width="72" height="80"></canvas><b>？？？</b><small>打完第 6 關解鎖</small>`:`${heroCanvas(h.id)}<b>${h.name}</b><small>${h.desc}<br>武器：${WEAPONS[h.weapon].name}</small>`}</div>`; }).join("")}</div>
+    return `<div class="card ${lock?"locked":""} ${selHero===h.id?"sel":""}" data-id="${h.id}">${lock?`<canvas width="72" height="80"></canvas><b>？？？</b><small>打完最後一關解鎖</small>`:`${heroCanvas(h.id)}<b>${h.name}</b><small>${h.desc}<br>武器：${WEAPONS[h.weapon].name}<br>特色：${h.trait}<br>必殺：「${h.ult.name}」</small>`}</div>`; }).join("")}</div>
     <button id="back">返回</button><button class="red" id="next">選關卡</button></div>`;
   paintHeroCanvases();
   ui.querySelectorAll(".card").forEach(c=>c.onclick=()=>{ if(c.classList.contains("locked")) return; selHero=c.dataset.id; showHeroes(); });
