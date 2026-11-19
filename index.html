@@ -183,7 +183,7 @@ const ENEMIES = {
   clip:    { label:"精華剪輯", shape:"phone",    color:"#c0392b", r:14, hp:14, spd:80, dmg:9,  xp:1, onBody:true },
   // 手遊廣告
   fakead:  { label:"跟廣告不一樣", shape:"arcade", color:"#9be7a0", r:18, hp:22, spd:56, dmg:12, xp:2, onBody:true, beh:"split", splitTo:"pull" },
-  pull:    { label:"拉針",     shape:"sign",     color:"#ffffff", r:12, hp:7,  spd:96, dmg:7,  xp:.6, onBody:true },
+  pull:    { label:"拉針",     shape:"sign",     color:"#ffffff", r:12, hp:7,  spd:80, dmg:6,  xp:.8, onBody:true },
   first1:  { label:"首儲1元",  shape:"bag",      color:"#ffd34d", r:14, hp:12, spd:78, dmg:9,  xp:1 },
   vip:     { label:"VIP15",    shape:"robot",    color:"#e0c060", r:17, hp:26, spd:54, dmg:12, xp:3, onBody:true },
   gacha:   { label:"999抽",    shape:"receipt",  color:"#fff3b0", r:15, hp:14, spd:70, dmg:10, xp:1, onBody:true, beh:"shoot", shot:"保底" },
@@ -202,16 +202,16 @@ const ENEMIES = {
 };
 
 const BOSSES = {
-  pin:     { name:"置頂：我不是針對誰", label:"置頂", shape:"bubble",   color:"#ffffff", r:58, hp:520,  spd:66, dmg:20, shot:"已編輯", summon:["troll","like","flame"], line:"我不是針對誰，我是說在座的各位" },
-  bigcup:  { name:"不收贊助（但收咖啡）", label:"買杯咖啡?", shape:"cup", color:"#8a5a35", r:60, hp:700, spd:64, dmg:22, shot:"咖啡", summon:["coffee","donate"], line:"我們不收贊助喔～咖啡可以" },
-  dealer:  { name:"外掛商人",     label:"外掛大賣", shape:"screen", color:"#3b3b3b", r:58, hp:880, spd:68, dmg:24, shot:"100T", summon:["plate","bag10"], line:"免費遊戲，付費外掛" },
-  bigcopy: { name:"壞掉的影印機", label:"影印中…", shape:"copier", color:"#bdbdbd", r:64, hp:1050, spd:58, dmg:26, shot:"A4", summon:["paper","copier"], line:"原稿？什麼原稿？" },
-  hydra:   { name:"複製站九頭蛇", label:"複製站×9", shape:"browser", color:"#53b8c0", r:64, hp:1250, spd:64, dmg:28, shot:".com", summon:["ros","mirror","ro"], line:"砍一個網址，長出九個" },
-  anchor:  { name:"業配之王",     label:"本集由…贊助", shape:"screen", color:"#2b2b2b", r:60, hp:1450, spd:66, dmg:29, shot:"業配", summon:["sponsor","donor","sub"], line:"本集由盜版遊戲贊助播出" },
-  adking:  { name:"跟廣告一模一樣", label:"立即下載", shape:"phone", color:"#2b2b2b", r:62, hp:1650, spd:66, dmg:30, shot:"拉針", summon:["fakead","first1","gacha"], line:"實際遊戲畫面（並不是）" },
-  oneclick:{ name:"一鍵生成大神", label:"Generate", shape:"robot", color:"#b9a6f0", r:62, hp:1850, spd:66, dmg:31, shot:"AI", summon:["aiimg","reskin","finger"], line:"我一秒能抄一百款" },
-  verdict: { name:"最終判決：好玩就好", label:"判決書", shape:"scroll", color:"#f3e2b8", r:64, hp:2050, spd:64, dmg:32, shot:"駁回", summon:["appeal","fee","netlaw"], line:"本庭認為：好玩就好" },
-  first:   { name:"「第一份」",   label:"?", shape:"question", color:"#2b2b2b", r:70, hp:2400, spd:66, dmg:34, shot:"原創?", summon:["ro","lin","a3","d2","zhijing"], line:"你確定……你是第一份嗎？" },
+  pin:     { name:"置頂：我不是針對誰", label:"置頂", shape:"bubble",   color:"#ffffff", r:58, hp:1400,  spd:66, dmg:20, shot:"已編輯", summon:["troll","like","flame"], line:"我不是針對誰，我是說在座的各位" },
+  bigcup:  { name:"不收贊助（但收咖啡）", label:"買杯咖啡?", shape:"cup", color:"#8a5a35", r:60, hp:1800, spd:64, dmg:22, shot:"咖啡", summon:["coffee","donate"], line:"我們不收贊助喔～咖啡可以" },
+  dealer:  { name:"外掛商人",     label:"外掛大賣", shape:"screen", color:"#3b3b3b", r:58, hp:2300, spd:68, dmg:24, shot:"100T", summon:["plate","bag10"], line:"免費遊戲，付費外掛" },
+  bigcopy: { name:"壞掉的影印機", label:"影印中…", shape:"copier", color:"#bdbdbd", r:64, hp:2700, spd:58, dmg:26, shot:"A4", summon:["paper","copier"], line:"原稿？什麼原稿？" },
+  hydra:   { name:"複製站九頭蛇", label:"複製站×9", shape:"browser", color:"#53b8c0", r:64, hp:3200, spd:64, dmg:28, shot:".com", summon:["ros","mirror","ro"], line:"砍一個網址，長出九個" },
+  anchor:  { name:"業配之王",     label:"本集由…贊助", shape:"screen", color:"#2b2b2b", r:60, hp:3700, spd:66, dmg:29, shot:"業配", summon:["sponsor","donor","sub"], line:"本集由盜版遊戲贊助播出" },
+  adking:  { name:"跟廣告一模一樣", label:"立即下載", shape:"phone", color:"#2b2b2b", r:62, hp:4200, spd:66, dmg:30, shot:"拉針", summon:["fakead","first1","gacha"], line:"實際遊戲畫面（並不是）" },
+  oneclick:{ name:"一鍵生成大神", label:"Generate", shape:"robot", color:"#b9a6f0", r:62, hp:4700, spd:66, dmg:31, shot:"AI", summon:["aiimg","reskin","finger"], line:"我一秒能抄一百款" },
+  verdict: { name:"最終判決：好玩就好", label:"判決書", shape:"scroll", color:"#f3e2b8", r:64, hp:5200, spd:64, dmg:32, shot:"駁回", summon:["appeal","fee","netlaw"], line:"本庭認為：好玩就好" },
+  first:   { name:"「第一份」",   label:"?", shape:"question", color:"#2b2b2b", r:70, hp:6200, spd:66, dmg:34, shot:"原創?", summon:["ro","lin","a3","d2","zhijing"], line:"你確定……你是第一份嗎？" },
 };
 
 // 場景物件：kind 決定畫法；t 是寫在上面的字
@@ -609,9 +609,10 @@ function doUlt(){ // 必殺：每 20 秒自動放一次，打整個畫面
   const u=G.hero.ult, p=G.p, dmg=40+G.lv*9, hw=W/ZOOM/2+40, hh=H/ZOOM/2+80;
   G.ultFx={ txt:u.name, col:u.col, t:1.5 }; G.shake=.5; sfx("evo"); say("p",u.name,2);
   for(const e of [...G.enemies]){ if(e.dead) continue; const dx=e.x-p.x, dy=e.y-p.y; if(Math.abs(dx)>hw||Math.abs(dy)>hh) continue; const L=Math.hypot(dx,dy)||1;
-    if(u.kind==="freeze"){ e.frozen=2.5; hitEnemy(e,dmg*.7,0,0); }
-    else if(u.kind==="push") hitEnemy(e,dmg*.8,dx/L*900,dy/L*900);
-    else if(u.kind!=="orange") hitEnemy(e,dmg,dx/L*220,dy/L*220); }
+    const ud=e.boss?dmg*.3:dmg;
+    if(u.kind==="freeze"){ e.frozen=e.boss?1.2:2.5; hitEnemy(e,ud*.7,0,0); }
+    else if(u.kind==="push") hitEnemy(e,ud*.8,dx/L*900,dy/L*900);
+    else if(u.kind!=="orange") hitEnemy(e,ud,dx/L*220,dy/L*220); }
   if(u.kind==="orange") for(let i=0;i<16;i++){ const tg=G.enemies[(R()*G.enemies.length)|0]; const ok=tg&&!tg.dead; const tx=ok?tg.x:p.x+(R()-.5)*hw*2, ty=ok?tg.y:p.y+(R()-.5)*hh*2; G.bullets.push({ k:"orange", sx:p.x, sy:p.y, tx, ty, t:0, T:.35+R()*.5, r:95, dmg }); }
 }
 function makeLayout(si){ // 每 1400×1400 一塊，塊裡的物件位置固定
@@ -654,7 +655,7 @@ function viewRadius(){ return Math.hypot(W,H)/2/ZOOM; }
 function spawnEnemy(type,x,y,opts){
   const d=ENEMIES[type]; const tScale=1+G.t/80, sScale=1+G.stage*0.09;
   const e={ type, d, spr:SPR[type], x, y, r:d.r, hp:d.hp*tScale*sScale, maxHp:0, spd:d.spd*(0.9+R()*0.2), dmg:d.dmg*0.7*(1+G.stage*0.07),
-    xp:d.xp*(1+G.stage*0.25), beh:d.beh||"chase", t:R()*3, flash:0, kx:0, ky:0, hitT:{}, dead:false, vx:0, vy:0, frame:R()<.5?0:1, slow:0, ft:R() };
+    xp:d.xp*(1+G.stage*0.18), beh:d.beh||"chase", t:R()*3, flash:0, kx:0, ky:0, hitT:{}, dead:false, vx:0, vy:0, frame:R()<.5?0:1, slow:0, ft:R() };
   e.maxHp=e.hp; if(opts) Object.assign(e,opts); G.enemies.push(e); return e;
 }
 function spawnTick(dt){
@@ -676,7 +677,7 @@ function spawnTick(dt){
 function spawnBoss(){
   const b=BOSSES[G.st.boss], a=R()*6.283, dd=viewRadius()*.8;
   const e={ type:"B_"+G.st.boss, d:b, spr:SPR["B_"+G.st.boss], boss:true, x:G.p.x+Math.cos(a)*dd, y:G.p.y+Math.sin(a)*dd, r:b.r,
-    hp:b.hp, maxHp:b.hp, spd:b.spd, dmg:b.dmg, xp:0, beh:"boss", t:0, ph:0, flash:0, kx:0, ky:0, hitT:{}, dead:false, frame:0, slow:0, ft:0 };
+    hp:b.hp*(0.5+G.lv*0.07), maxHp:b.hp*(0.5+G.lv*0.07), spd:b.spd, dmg:b.dmg, xp:0, beh:"boss", t:0, ph:0, flash:0, kx:0, ky:0, hitT:{}, dead:false, frame:0, slow:0, ft:0 };
   G.enemies.push(e); G.boss=e; G.bossSpawned=true; G.shake=.6; showMsg("BOSS 出現！", b.name); sfx("boss"); if(b.line) say(e,b.line,3.5);
 }
 function hitEnemy(e,dmg,kx,ky){
@@ -701,7 +702,9 @@ function updateEnemies(dt){
     if(e.dead) continue;
     e.t+=dt; e.flash-=dt; e.slow-=dt;
     let dx=p.x-e.x, dy=p.y-e.y; const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L;
-    let sp=e.spd*(e.slow>0?.4:1); if(e.frozen>0){ e.frozen-=dt; sp=0; }
+    let sp=e.spd*(e.slow>0?.4:1);
+    if(e.dashT>0){ e.dashT-=dt; dx=e.ldx; dy=e.ldy; sp=e.dashT>.55?0:e.spd*5.5; }
+    if(e.frozen>0){ e.frozen-=dt; sp=0; }
     if(e.beh==="line"){ e.x+=e.vx*sp*1.1*dt; e.y+=e.vy*sp*1.1*dt; e.life-=dt; if(e.life<=0) e.dead=true; }
     else {
       if(e.beh==="dash"){ const c=e.t%3.2; if(c>2.5) sp*=3.2; else if(c>2.1) sp*=.15; }
@@ -716,9 +719,13 @@ function updateEnemies(dt){
   for(const a of grid.values()){ const n=Math.min(a.length,10); for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ const A=a[i],B=a[j]; const dx=B.x-A.x, dy=B.y-A.y, rr=(A.r+B.r)*.8, d2=dx*dx+dy*dy; if(d2<rr*rr&&d2>0.01){ const d=Math.sqrt(d2), push=(rr-d)*.5/d; if(!A.boss){ A.x-=dx*push; A.y-=dy*push; } if(!B.boss){ B.x+=dx*push; B.y+=dy*push; } } } }
 }
 function bossAI(e){
-  const b=e.d; if(e.t>3.2){ e.t=0; e.ph++;
-    if(e.ph%2===1){ const n=10+G.stage*2; const o=R()*6.28; for(let i=0;i<n;i++){ const a=o+i/n*6.283; G.ebullets.push({ x:e.x, y:e.y, vx:Math.cos(a)*150, vy:Math.sin(a)*150, r:11, dmg:b.dmg*.6, life:5, txt:b.shot }); } sfx("shoot"); }
-    else { for(let i=0;i<6+G.stage;i++){ const t=b.summon[(R()*b.summon.length)|0]; const a=R()*6.28; spawnEnemy(t,e.x+Math.cos(a)*e.r*1.3,e.y+Math.sin(a)*e.r*1.3); } }
+  const b=e.d, enr=e.hp<e.maxHp*.5;
+  if(enr&&!e.enraged){ e.enraged=true; e.spd*=1.3; G.shake=.6; showMsg("BOSS 暴怒！","血剩一半，攻擊變快"); say(e,"你真的要告我？？",3); sfx("boss"); }
+  if(e.t>(enr?2.1:3.0)){ e.t=0; e.ph++;
+    if(e.ph%3===2){ const dx=G.p.x-e.x, dy=G.p.y-e.y, L=Math.hypot(dx,dy)||1; e.ldx=dx/L; e.ldy=dy/L; e.dashT=1.05; return; } // 衝撞：先停 0.5 秒（地上有紅線警告）再衝
+    if(e.ph%3===1){ const n=Math.round((10+G.stage*2)*(enr?1.6:1)); const o=R()*6.28; for(let i=0;i<n;i++){ const a=o+i/n*6.283; G.ebullets.push({ x:e.x, y:e.y, vx:Math.cos(a)*150, vy:Math.sin(a)*150, r:11, dmg:b.dmg*.6, life:5, txt:b.shot }); } if(enr) setTimeout(()=>{ if(!G||e.dead) return; const o2=R()*6.28; for(let i=0;i<n;i++){ const a=o2+i/n*6.283; G.ebullets.push({ x:e.x, y:e.y, vx:Math.cos(a)*190, vy:Math.sin(a)*190, r:11, dmg:b.dmg*.6, life:5, txt:b.shot }); } },350);
+      sfx("shoot"); }
+    else { for(let i=0;i<(6+G.stage)*(enr?1.5:1);i++){ const t=b.summon[(R()*b.summon.length)|0]; const a=R()*6.28; spawnEnemy(t,e.x+Math.cos(a)*e.r*1.3,e.y+Math.sin(a)*e.r*1.3); } }
   }
 }
 
@@ -918,6 +925,7 @@ function draw(){
     else if(it.k===3){ label(ctx,it.o.k==="coffee"?"☕":"🧲",it.o.x,it.o.y-14-Math.sin(G.t*4)*3,24); }
   }
   drawWeapons(p);
+  if(G.boss&&G.boss.dashT>.55){ const b=G.boss, len=e2len(b); ctx.save(); ctx.strokeStyle="rgba(214,50,43,.7)"; ctx.lineWidth=b.r*1.2; ctx.setLineDash([18,12]); ctx.lineCap="butt"; ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.x+b.ldx*len,b.y+b.ldy*len); ctx.stroke(); ctx.restore(); label(ctx,"要衝了！",b.x,b.y-b.r*2.4,20,"#d6322b"); }
   const pulse=.5+.5*Math.sin(G.t*14);
   for(const b of G.ebullets){ const by=b.y-LIFT, vr=b.r+5; ctx.fillStyle="rgba(214,50,43,.25)"; shadow(b.x,b.y,vr*.9);
     ctx.strokeStyle=`rgba(214,50,43,${.35+.4*pulse})`; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(b.x,by,vr+4+pulse*3,0,7); ctx.stroke();
@@ -937,6 +945,7 @@ function drawBubble(x,y,txt,sz,hero){
   ctx.fillStyle=hero?"#fff":"#fffbe6"; ctx.fill(); ctx.lineWidth=hero?3:2.2; ctx.strokeStyle=hero?"#d6322b":"#222"; ctx.stroke();
   ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillStyle=hero?"#d6322b":"#222"; ctx.fillText(txt,snap(x),by+h/2+1);
 }
+function e2len(b){ return b.spd*5.5*.55; }
 function drawGround(p,vw,vh){
   // 地磚：橫向壓扁的格子，看起來像斜著看地板
   const gw=96, gh=64, x0=Math.floor((p.x-vw)/gw), y0=Math.floor((p.y-vh)/gh), nx=Math.ceil(vw*2/gw)+1, ny=Math.ceil(vh*2/gh)+1;
@@ -1015,7 +1024,7 @@ function paintHeroCanvases(){ ui.querySelectorAll("canvas[data-hero]").forEach(c
 function showTitle(){
   G=null; mode="menu"; pauseBtn.style.display="none"; muteBtn.style.display="block";
   ui.innerHTML=`<div class="screen"><h1>抄襲<span>倖存者</span></h1><div class="sub">所有人都在抄倖存者，那就讓被抄的人來打。</div>
-    <button class="red" id="go">開始</button><div class="note">電腦：WASD／方向鍵移動，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.1　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
+    <button class="red" id="go">開始</button><div class="note">電腦：WASD／方向鍵移動，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.2　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
   document.getElementById("go").onclick=showHeroes;
 }
 function showHeroes(){
