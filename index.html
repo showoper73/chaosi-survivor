@@ -61,6 +61,20 @@
   .choice.evo { background:linear-gradient(90deg,#fff2a8,#ffd0c8); }
   .tag { display:inline-block; font-size:12px; background:var(--red); color:#fff; padding:1px 6px; border-radius:6px; margin-left:4px; }
   .note { font-size:13px; opacity:.7; margin-top:10px; line-height:1.5; }
+  .end h2 { margin-bottom:2px; } .end .quip { color:var(--red); font-weight:900; font-size:17px; margin-bottom:4px; transform:rotate(-1deg); }
+  .chips { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:10px 0; }
+  .chip { background:#fff; border:2px solid var(--ink); border-radius:10px 14px 9px 12px; padding:5px 2px; line-height:1.15; }
+  .chip b { display:block; font-size:20px; } .chip small { font-size:11.5px; opacity:.7; }
+  .panels { display:grid; grid-template-columns:1fr 1fr; gap:8px; text-align:left; }
+  @media (max-width:560px){ .panels { grid-template-columns:1fr; } .chip b { font-size:17px; } }
+  .panel { background:#fff; border:2px solid var(--ink); border-radius:12px 8px 14px 9px; padding:7px 9px; font-size:13px; }
+  .panel h4 { margin:0 0 5px; font-size:14px; }
+  .drow { display:grid; grid-template-columns:1fr 46px; gap:4px; align-items:center; margin:3px 0; }
+  .drow .bar { height:7px; background:#eee; border-radius:4px; overflow:hidden; margin-top:2px; } .drow .bar i { display:block; height:100%; background:var(--red); }
+  .drow span { font-size:12px; text-align:right; opacity:.75; }
+  .donate-box { margin:12px 0 8px; padding:4px 10px 8px; border:3px dashed rgba(0,0,0,.35); border-radius:14px; }
+  .wish { margin-top:10px; padding:8px 10px; background:#fff8d6; border:2px solid var(--ink); border-radius:12px 16px 10px 14px; font-size:13px; line-height:1.5; }
+  .wish b.t { font-size:16px; }
   .topbtn { position:fixed; top:10px; pointer-events:auto; display:none; padding:4px 10px; z-index:3; font-size:16px; }
   #pauseBtn { right:10px; } #muteBtn { right:62px; }
   #lvWrap { position:fixed; right:14px; bottom:22px; z-index:3; display:none; text-align:right; pointer-events:none; }
@@ -85,7 +99,8 @@
 
 // ---------------- DATA ----------------
 const DONATE_URL = "https://payment.ecpay.com.tw/Broadcaster/Donate/A1BE1451D4ED551FC79257A77F733CDD";
-const YT_URL = "https://www.youtube.com/@techcat0218"; // 綠界收款／贊助連結，申請好貼這裡
+const YT_URL = "https://www.youtube.com/@techcat0218";
+const WISH_URL = "https://www.youtube.com/watch?v=1wcqLEIqNIs"; // 許願影片（置頂留言就是許願區） // 綠界收款／贊助連結，申請好貼這裡
 
 const HEROES = [
   { id:"mr",     name:"正版先生",   hp:120, speed:150, weapon:"briefcase", desc:"從頭到尾一句話都不說。", trait:"附沉默光環，受傷 -20%", mod:{ armor:.2 },
@@ -169,7 +184,7 @@ const TITLES=[
   ["正版守護者","打贏 10 局",S=>S.wins>=10], ["千人斬（都是抄的）","累積檢舉 1000",S=>S.kills>=1000], ["萬人斬（還是抄的）","累積檢舉 10000",S=>S.kills>=10000],
   ["被抄走專家","洗稿加工失敗 5 次",S=>S.fails>=5], ["衝裝賭神","洗稿加工到 +7",S=>S.maxEn>=7], ["傳說中的正版","撿到「正版」裝備",S=>S.legend>=1],
   ["裸奔勇者","什麼都沒穿打贏一局",S=>S.naked>=1], ["爬塔新手","無限塔第 5 層",()=>(save.maxFloor||0)>=5], ["塔頂抄襲者","無限塔第 20 層",()=>(save.maxFloor||0)>=20],
-  ["每日打卡仔","每日挑戰打贏 3 次",S=>S.daily>=3], ["自稱有贊助的人","靠良心領（結束畫面）",()=>save.title==="自稱有贊助的人"||(save.titles||[]).includes("自稱有贊助的人")],
+  ["每日打卡仔","每日挑戰打贏 3 次",S=>S.daily>=3], ["自稱有贊助的人","靠良心領（結束畫面）",()=>save.title==="自稱有贊助的人"||(save.titles||[]).includes("自稱有贊助的人")], ["自稱有訂閱的人","靠良心領（許願池）",()=>save.title==="自稱有訂閱的人"||(save.titles||[]).includes("自稱有訂閱的人")],
   ["正版先生說了一句話","（不可能達成）",()=>false],
 ];
 function checkTitles(){ save.titles=save.titles||[]; for(const [n,,f] of TITLES) if(!save.titles.includes(n) && f(save.stats||{})){ save.titles.push(n); toast(`獲得自封頭銜「${n}」`); } store.set(save); }
@@ -1242,8 +1257,8 @@ function showTitle(){
   G=null; mode="menu"; pauseBtn.style.display="none"; muteBtn.style.display="block";
   ui.innerHTML=`<div class="screen"><h1>抄襲<span>倖存者</span></h1><div class="sub">所有人都在抄倖存者，那就讓被抄的人來打。</div>
     <div class="sub" style="margin-top:-6px"><b style="color:var(--red)">已被玩過 9000+ 次</b>（數字是抄來的）</div>
-    <button class="red" id="go">開始</button><button id="bag">贓物袋</button><button id="shop">黑市</button><button id="ttls">自封頭銜</button><button id="code">備份碼（盜版用）</button><div class="note">電腦：WASD／方向鍵移動，空白鍵再抄一次，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.7　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
-  document.getElementById("go").onclick=showHeroes; document.getElementById("bag").onclick=()=>showBag(showTitle); document.getElementById("code").onclick=showCode; document.getElementById("shop").onclick=()=>showShop(showTitle); document.getElementById("ttls").onclick=showTitles;
+    <button class="red" id="go">開始</button><button id="bag">贓物袋</button><button id="shop">黑市</button><button id="ttls">自封頭銜</button><button id="code">備份碼（盜版用）</button><button id="wish">許願池</button><div class="note">電腦：WASD／方向鍵移動，空白鍵再抄一次，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.7　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
+  document.getElementById("go").onclick=showHeroes; document.getElementById("bag").onclick=()=>showBag(showTitle); document.getElementById("code").onclick=showCode; document.getElementById("shop").onclick=()=>showShop(showTitle); document.getElementById("ttls").onclick=showTitles; document.getElementById("wish").onclick=()=>showWish(showTitle);
 }
 function showHeroes(){
   ui.innerHTML=`<div class="screen"><h2>創建角色</h2><input id="nm" class="nm" maxlength="8" value="${(save.name||"").replace(/"/g,"")}" placeholder="取個名字（抄別人的也行）"><div class="sub">選外型：角色只差在長相、台詞和惱羞成怒，強不強看裝備${save.title?`<br>自封頭銜：「${save.title}」`:""}</div><div class="grid">${HEROES.map(h=>{ const lock=h.hidden&&!save.origin;
@@ -1303,7 +1318,7 @@ function showBag(back){ const inv=save.inv||[], eq=save.eq||{}, eqd=Object.value
   document.getElementById("junk").onclick=()=>{ let g=0; for(const it of [...save.inv]) if(it.r===0&&!Object.values(save.eq).includes(it.u)) g+=salvage(it.u); store.set(save); showBag(back); if(g) toast(`銷毀了一堆證據，黑錢+${g}`); };
 }
 function showItem(u,back){ const it=save.inv.find(i=>i.u===u); if(!it) return showBag(back); const I=ITEM[it.b], on=save.eq[I.s]===u;
-  ui.innerHTML=`<div class="screen"><h2>${SLOTN[I.s]}</h2><div class="card" style="max-width:240px;margin:0 auto;cursor:default">${itemHtml(it)}<small style="margin-top:6px">「${I.d}」</small></div>
+  ui.innerHTML=`<div class="screen"><h2>${SLOTN[I.s]}</h2><div class="card" style="max-width:240px;margin:0 auto;cursor:default">${itemHtml(it)}<small style="margin-top:6px">「${I.d}」${I.by?`<br>許願者：${I.by}`:""}</small></div>
     <button class="red" id="wear">${on?"脫下":"穿上"}</button><button id="sell">銷毀證據 → 黑錢+${itemVal(it)}</button><br>
     <button id="enh">洗稿加工：${SCROLLS[scrollKind(it)].n}（有 ${(save.scrolls||{})[scrollKind(it)]||0}）</button>${(save.scrolls||{}).bless?`<button id="bls">用正版授權公文（有 ${save.scrolls.bless}）</button>`:""}
     ${(save.scrolls||{}).prot?`<div class="sub"><label><input type="checkbox" id="prot" checked> 失敗時用存證信函保護（有 ${save.scrolls.prot}）</label></div>`:""}
@@ -1380,18 +1395,22 @@ function endGame(win){
     if(G.stage===STAGES.length-1 && !save.origin){ save.origin=true; extra=`<p><b>解鎖隱藏角色：倖存者始祖！</b><br>原來大家抄的，都是他的玩法。</p>`; }
     store.set(save); }
   const hasNext=win && (G.tower?true:(!G.daily && G.stage<STAGES.length-1));
-  ui.innerHTML=`<div class="screen"><h2>${win?"打爆了！":"你被抄走了…"}</h2>
-    <div class="sub">${G.name}（${G.hero.name}）｜${G.st.name}｜撐了 ${Math.floor(G.t)} 秒｜Lv ${G.lv}｜已檢舉 ${G.kills}</div>
-    ${win?`<p><b>${G.name}</b> 打倒了 <b>${BOSSES[G.st.boss].name}</b></p>`:""}
-    ${dmgTable()}
-    <div class="note" style="text-align:left;opacity:.9">這局拿到：黑錢 +${goldGain}${Object.keys(G.scr).map(k=>`、${SCROLLS[k].n}×${G.scr[k]}`).join("")}${G.loot.length?G.loot.map(it=>`<br><b style="color:${RAR[it.r].c}">【${RAR[it.r].n}】${ITEM[it.b].n}</b> <small>${statLine(it.st)}</small>`).join(""):"<br>裝備：沒有（運氣也是實力的一部分）"}<br><small>已放進贓物袋，去贓物袋穿上。</small></div>
-    ${win?(G.stage===STAGES.length-1?`<p>「第一份」被打倒了。<br>正版先生看了一眼，還是一句話都沒說。</p>`:""):`<p>${["抄襲者太多了。","你被留言淹沒了。","對方說：好玩就好。"][(R()*3)|0]}</p>`}
+  const quip=win?(G.stage===STAGES.length-1&&!G.tower&&!G.daily?"「第一份」被打倒了。正版先生看了一眼，還是一句話都沒說。":`${G.name} 打倒了 ${BOSSES[G.st.boss].name}`):["抄襲者太多了。","你被留言淹沒了。","對方說：好玩就好。"][(R()*3)|0];
+  const loot=G.loot.map(it=>`<div><b style="color:${RAR[it.r].c}">【${RAR[it.r].n}】${ITEM[it.b].n}</b><br><small>${statLine(it.st)}</small></div>`).join("")||"<div>裝備：沒有<br><small>（運氣也是實力的一部分）</small></div>";
+  const scr=Object.keys(G.scr).map(k=>`<div>${SCROLLS[k].n} ×${G.scr[k]}</div>`).join("");
+  ui.innerHTML=`<div class="screen end"><h2>${win?"打爆了！":"你被抄走了…"}</h2><div class="quip">${quip}</div>
+    <div class="sub" style="margin-bottom:0">${G.name}（${G.hero.name}）｜${G.st.name}</div>
+    <div class="chips"><div class="chip"><b>${Math.floor(G.t)}</b><small>撐了幾秒</small></div><div class="chip"><b>${G.lv}</b><small>等級</small></div><div class="chip"><b>${G.kills}</b><small>已檢舉</small></div><div class="chip"><b>+${goldGain}</b><small>黑錢</small></div></div>
+    <div class="panels"><div class="panel"><h4>誰打最多</h4>${dmgTable()||"<small>一下都沒打到</small>"}</div>
+      <div class="panel"><h4>這局撿到</h4>${loot}${scr}<small style="opacity:.6">已放進贓物袋</small></div></div>
     ${extra}
-    ${donateHtml()}
+    <div class="donate-box">${donateHtml()}
     <div class="donate-sub">別人說「不收贊助，但歡迎請喝咖啡」。我們不演，直接說：本遊戲收贊助。<br>
-      贊助可獲得：<b>沒屁用的頭銜</b>一個。不會變強、不加嘴砲力，連顏色都不會變。<br>我們查不到誰有贊助，所以頭銜<b>靠良心自己領</b>。<br>
-      <button class="mini" id="ttl">${save.title?`已領「${save.title}」（良心還好嗎）`:"我贊助了，領頭銜"}</button></div>
-    <button class="red" id="share">產生分享圖</button><br>${hasNext?`<button class="mini" id="next">${G.tower?"下一層":"下一關"}</button>`:""}<button class="mini" id="menu">回標題</button><a href="${YT_URL}" target="_blank" rel="noopener"><button class="mini">看科技貓頻道</button></a></div>`;
+      贊助只換<b>沒屁用的頭銜</b>一個：不會變強、不加嘴砲力，連顏色都不會變。查不到誰有贊助，所以<b>靠良心自己領</b>。<br>
+      <button class="mini" id="ttl">${save.title?`已領「${save.title}」（良心還好嗎）`:"我贊助了，領頭銜"}</button></div></div>
+    ${hasNext?`<button class="mini" id="next">${G.tower?"下一層":"下一關"}</button>`:""}<button class="mini" id="share">產生分享圖</button><button class="mini" id="menu">回標題</button>
+    ${wishHtml()}</div>`;
+  bindWish();
   const s=G.stage;
   const tw=G.tower; if(hasNext) document.getElementById("next").onclick=()=>tw?newGame(0,{ tower:tw+1 }):newGame(s+1);
   document.getElementById("share").onclick=showShare;
@@ -1399,7 +1418,20 @@ function endGame(win){
   document.getElementById("ttl").onclick=e=>{ save.title="自稱有贊助的人"; save.titles=save.titles||[]; if(!save.titles.includes(save.title)) save.titles.push(save.title); store.set(save); e.target.textContent=`已領「${save.title}」（良心還好嗎）`; };
 }
 function dmgTable(){ const rows=Object.entries(G.dmgBy).filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]); const tot=rows.reduce((a,r)=>a+r[1],0)||1;
-  if(!rows.length) return ""; return `<div class="note" style="text-align:left;opacity:.85">傷害統計：${rows.slice(0,6).map(([k,v])=>`<br>${k==="ult"?"惱羞成怒「"+G.hero.ult.name+"」":(WEAPONS[k]?(G.weapons[k]>=6?WEAPONS[k].evo[1]:WEAPONS[k].name):"其他")}　${Math.round(v)}（${Math.round(v/tot*100)}%）`).join("")}</div>`; }
+  if(!rows.length) return ""; return rows.slice(0,5).map(([k,v])=>{ const nm=k==="ult"?"惱羞成怒「"+G.hero.ult.name+"」":(WEAPONS[k]?(G.weapons[k]>=6?WEAPONS[k].evo[1]:WEAPONS[k].name):"其他"), pc=Math.round(v/tot*100);
+    return `<div class="drow"><div>${nm}<div class="bar"><i style="width:${pc}%"></i></div></div><span>${Math.round(v)}<br>${pc}%</span></div>`; }).join(""); }
+// ---------------- 許願池（玩家到 YT 留言許願，做進遊戲並寫上許願者） ----------------
+const WISH_TAG="#抄襲許願";
+const WISH_TEMPLATE=`${WISH_TAG}
+類型：武器／頭／身體／飾品／怪物／場景
+名字：
+它會幹嘛（越好笑越好）：`;
+function wishHtml(){ return `<div class="wish"><b class="t">許願池：想被做成遊戲的東西？</b><br>到許願影片的<b>置頂留言</b>底下回覆 <b>${WISH_TAG}</b>，寫你想要的武器、裝備、飾品、怪物或場景。被選中就做進遊戲，還會寫上「許願者：你的名字」。<br>
+  <b>許願門檻：要先訂閱。</b>我們查不到誰有訂閱，所以一樣<b>靠良心</b>。訂了可以順便領頭銜「自稱有訂閱的人」（一樣沒屁用）。<br><small>不收真人、不收別家遊戲的角色（我們只抄梗，不抄 IP）。</small><br>
+  <a href="${WISH_URL}" target="_blank" rel="noopener"><button class="mini red">去 YT 許願</button></a><button class="mini wishcp">複製許願格式</button><button class="mini subttl">${(save.titles||[]).includes("自稱有訂閱的人")?"已領「自稱有訂閱的人」":"我訂閱了，領頭銜"}</button></div>`; }
+function bindWish(){ ui.querySelectorAll(".subttl").forEach(b=>b.onclick=()=>{ const t="自稱有訂閱的人"; save.titles=save.titles||[]; if(!save.titles.includes(t)) save.titles.push(t); save.title=t; store.set(save); b.textContent="已領「"+t+"」（良心還好嗎）"; toast("頭銜已戴上：「"+t+"」"); }); ui.querySelectorAll(".wishcp").forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(WISH_TEMPLATE); toast("複製好了，去 YT 貼上"); }catch(e){ prompt("複製下面這段，到 YT 留言貼上：",WISH_TEMPLATE.split(String.fromCharCode(10)).join(" ")); } }); }
+function showWish(back){ ui.innerHTML=`<div class="screen"><h2>許願池</h2><div class="sub">許願不用錢，被選中的機率看好不好笑。</div>${wishHtml()}${wishedList()}<br><button id="bk">返回</button></div>`; bindWish(); document.getElementById("bk").onclick=back; }
+function wishedList(){ const a=Object.values(ITEM).filter(I=>I.by); return a.length?`<div class="note" style="text-align:left">已經實現的願望：${a.map(I=>`<br>${I.n}（許願者：${I.by}）`).join("")}</div>`:`<div class="note">已經實現的願望：還沒有。第一個可能就是你。</div>`; }
 
 showTitle();
 requestAnimationFrame(frame);
