@@ -142,7 +142,7 @@ const ITEM={
   susb:   { s:"acc", n:"存證 USB", ic:"usb2", d:"裡面全是截圖。" },
   gift:   { s:"acc", n:"1 元首儲禮包", ic:"gift", d:"打開是空的。" },
   ring:   { s:"acc", n:"AI 生成的戒指", ic:"ring", d:"有六個洞。" },
-  rcpt:   { s:"acc", n:"綠界收據", ic:"rcpt", d:"證明你真的有贊助（不保證）。" },
+  rcpt:   { s:"acc", n:"綠界收據", ic:"rcpt", d:"路邊撿到別人的，證明不了什麼。" },
   pin:    { s:"acc", n:"置頂留言別針", ic:"pin", d:"別上就被所有人看到。" },
   // 只有「正版」才會掉
   cert:   { s:"acc", n:"正版授權書", ic:"cert", d:"全世界只有一張，影印的不算。", leg:{ dmg:.12, crit:.04, xp:.1 } },
@@ -331,7 +331,7 @@ const STAGES = [
     props:[["sign","公告：理性討論"],["sign","禁止引戰（沒用）"],["bigphone","熱門貼文"],["lamp"],["bin","已刪留言"],["boom","!!!"],["stall","吃瓜 10元"],["crate","截圖存證"],["boom","笑死"],["sign","本區已吵 87 天"],["copycat","抄留言中…"],["ctrlcv"]] },
   { name:"咖啡廳",     sub:"不營利，但歡迎請喝咖啡", bg:"#f1e6d6", tile:"#e7d8c2", boss:"bigcup",
     spawn:[["coffee",5,0],["latte",4,0],["receipt",3,15],["ecpay",3,25],["tip",3,35],["donate",2,45],["troll",2,0]],
-    props:[["table"],["table"],["machine","咖啡機"],["sign","今日推薦：贊助拿鐵"],["plant"],["stall","綠界付款處"],["lamp"],["sign","沒有贊助系統"],["copycat","抄菜單中…"],["sign","咖啡 = 贊助（不是）"]] },
+    props:[["table"],["table"],["machine","咖啡機"],["sign","今日推薦：贊助拿鐵"],["plant"],["stall","綠界付款處"],["lamp"],["sign","沒有贊助系統"],["copycat","抄菜單中…"],["sign","咖啡 = 黑錢"]] },
   { name:"外掛黑市",   sub:"免費遊戲，付費外掛", bg:"#e9e9e2", tile:"#dcdcd2", boss:"dealer",
     spawn:[["plate",4,0],["bag10",4,0],["sell",3,10],["script",2,20],["robot",3,30],["bag100",1,60],["keyb",2,0]],
     props:[["stall","外掛 便宜賣"],["stall","10T 只要 99"],["crate","代練"],["lamp"],["bin","被封的帳號"],["sign","本店不收綠界"],["tent"],["ctrlcv"],["copycat","抄外掛中…"]] },
@@ -1294,30 +1294,30 @@ function showPause(){ const S=stat(), g=G.gear||{}, p=G.p;
 function showBag(back){ const inv=save.inv||[], eq=save.eq||{}, eqd=Object.values(eq), find=u=>inv.find(i=>i.u===u);
   const slots=SLOTS.map(sl=>{ const it=find(eq[sl]); return `<div class="card ${it?"":"locked"}" data-u="${it?it.u:""}"><small style="text-align:center">${SLOTN[sl]}</small>${it?itemHtml(it):`<b style="opacity:.5">（空）</b><small style="text-align:center">裸奔中</small>`}</div>`; }).join("");
   const list=[...inv].sort((a,b)=>b.r-a.r||b.lv-a.lv).map(it=>`<div class="card ${eqd.includes(it.u)?"sel":""}" data-u="${it.u}">${itemHtml(it)}</div>`).join("");
-  ui.innerHTML=`<div class="screen"><h2>贓物袋</h2><div class="sub">贊助（不是） ${save.gold||0}｜${inv.length}/${INV_MAX} 件<br>目前加成：${statLine(gearStats())||"沒有（裸奔中）"}</div>
+  ui.innerHTML=`<div class="screen"><h2>贓物袋</h2><div class="sub">黑錢 ${save.gold||0}｜${inv.length}/${INV_MAX} 件<br>目前加成：${statLine(gearStats())||"沒有（裸奔中）"}</div>
     <div class="grid">${slots}</div><div class="sub">點裝備可以穿上或銷毀證據；紅框是穿著的</div><div class="grid">${list||"<small>空的。去打怪吧，裝備會自己掉。</small>"}</div>
     <button id="bk">返回</button><button id="shop1">公文黑市</button><button id="junk">一鍵銷毀「路邊撿的」證據</button></div>`;
   document.getElementById("shop1").onclick=()=>showShop(()=>showBag(back));
   ui.querySelectorAll(".card[data-u]").forEach(c=>c.onclick=()=>{ const u=+c.dataset.u; if(u) showItem(u,back); });
   document.getElementById("bk").onclick=back;
-  document.getElementById("junk").onclick=()=>{ let g=0; for(const it of [...save.inv]) if(it.r===0&&!Object.values(save.eq).includes(it.u)) g+=salvage(it.u); store.set(save); showBag(back); if(g) toast(`銷毀了一堆證據，贊助（不是）+${g}`); };
+  document.getElementById("junk").onclick=()=>{ let g=0; for(const it of [...save.inv]) if(it.r===0&&!Object.values(save.eq).includes(it.u)) g+=salvage(it.u); store.set(save); showBag(back); if(g) toast(`銷毀了一堆證據，黑錢+${g}`); };
 }
 function showItem(u,back){ const it=save.inv.find(i=>i.u===u); if(!it) return showBag(back); const I=ITEM[it.b], on=save.eq[I.s]===u;
   ui.innerHTML=`<div class="screen"><h2>${SLOTN[I.s]}</h2><div class="card" style="max-width:240px;margin:0 auto;cursor:default">${itemHtml(it)}<small style="margin-top:6px">「${I.d}」</small></div>
-    <button class="red" id="wear">${on?"脫下":"穿上"}</button><button id="sell">銷毀證據 → 贊助（不是）+${itemVal(it)}</button><br>
+    <button class="red" id="wear">${on?"脫下":"穿上"}</button><button id="sell">銷毀證據 → 黑錢+${itemVal(it)}</button><br>
     <button id="enh">洗稿加工：${SCROLLS[scrollKind(it)].n}（有 ${(save.scrolls||{})[scrollKind(it)]||0}）</button>${(save.scrolls||{}).bless?`<button id="bls">用正版授權公文（有 ${save.scrolls.bless}）</button>`:""}
     ${(save.scrolls||{}).prot?`<div class="sub"><label><input type="checkbox" id="prot" checked> 失敗時用存證信函保護（有 ${save.scrolls.prot}）</label></div>`:""}
     <div class="sub">現在 +${it.en||0}，下一次成功率 ${Math.round(((it.en||0)<3?1:Math.max(.15,.75-((it.en||0)-2)*.1))*100)}%（每 +1 加成多 10%）</div>
     <button id="bk">返回</button></div>`;
   document.getElementById("enh").onclick=()=>enhance(u,false,back); const bl=document.getElementById("bls"); if(bl) bl.onclick=()=>enhance(u,true,back);
   document.getElementById("wear").onclick=()=>{ if(on) delete save.eq[I.s]; else save.eq[I.s]=u; store.set(save); showBag(back); };
-  document.getElementById("sell").onclick=()=>{ const g=salvage(u); store.set(save); showBag(back); toast(`證據銷毀了，贊助（不是）+${g}`); };
+  document.getElementById("sell").onclick=()=>{ const g=salvage(u); store.set(save); showBag(back); toast(`證據銷毀了，黑錢+${g}`); };
   document.getElementById("bk").onclick=()=>showBag(back);
 }
 function showShop(back){ save.scrolls=save.scrolls||{};
-  ui.innerHTML=`<div class="screen"><h2>公文黑市</h2><div class="sub">贊助（不是） ${save.gold||0}｜老闆說：「賣的都是正版（大概）」</div>${Object.entries(SCROLLS).map(([k,v])=>`<button class="choice" data-k="${k}">${v.n} <span class="tag">${v.p} 贊助（不是）</span> <span class="tag">有 ${save.scrolls[k]||0}</span><small>${v.d}</small></button>`).join("")}
-    <div class="note">洗稿加工規則：+3 以前一定成功，之後越高越難。<br>失敗的話，裝備會<b>被抄走</b>（消失）。</div><button id="bk">返回</button></div>`;
-  ui.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{ const k=b.dataset.k, v=SCROLLS[k]; if((save.gold||0)<v.p) return toast("贊助（不是）不夠（要不要先去打怪）"); save.gold-=v.p; save.scrolls[k]=(save.scrolls[k]||0)+1; store.set(save); showShop(back); toast(`買了 ${v.n}`); });
+  ui.innerHTML=`<div class="screen"><h2>公文黑市</h2><div class="sub">黑錢 ${save.gold||0}｜老闆說：「賣的都是正版（大概）」</div>${Object.entries(SCROLLS).map(([k,v])=>`<button class="choice" data-k="${k}">${v.n} <span class="tag">${v.p} 黑錢</span> <span class="tag">有 ${save.scrolls[k]||0}</span><small>${v.d}</small></button>`).join("")}
+    <div class="note">黑錢只能靠打怪和銷毀證據拿，真錢買不到，贊助也不會給。<br>洗稿加工規則：+3 以前一定成功，之後越高越難。<br>失敗的話，裝備會<b>被抄走</b>（消失）。</div><button id="bk">返回</button></div>`;
+  ui.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{ const k=b.dataset.k, v=SCROLLS[k]; if((save.gold||0)<v.p) return toast("黑錢不夠（要不要先去打怪）"); save.gold-=v.p; save.scrolls[k]=(save.scrolls[k]||0)+1; store.set(save); showShop(back); toast(`買了 ${v.n}`); });
   document.getElementById("bk").onclick=back;
 }
 function enhance(u,bless,back){ const it=save.inv.find(i=>i.u===u); if(!it) return; const k=bless?"bless":scrollKind(it); save.scrolls=save.scrolls||{}; const S=save.stats=save.stats||{};
@@ -1384,7 +1384,7 @@ function endGame(win){
     <div class="sub">${G.name}（${G.hero.name}）｜${G.st.name}｜撐了 ${Math.floor(G.t)} 秒｜Lv ${G.lv}｜已檢舉 ${G.kills}</div>
     ${win?`<p><b>${G.name}</b> 打倒了 <b>${BOSSES[G.st.boss].name}</b></p>`:""}
     ${dmgTable()}
-    <div class="note" style="text-align:left;opacity:.9">這局拿到：贊助（不是） +${goldGain}${Object.keys(G.scr).map(k=>`、${SCROLLS[k].n}×${G.scr[k]}`).join("")}${G.loot.length?G.loot.map(it=>`<br><b style="color:${RAR[it.r].c}">【${RAR[it.r].n}】${ITEM[it.b].n}</b> <small>${statLine(it.st)}</small>`).join(""):"<br>裝備：沒有（運氣也是實力的一部分）"}<br><small>已放進贓物袋，去贓物袋穿上。</small></div>
+    <div class="note" style="text-align:left;opacity:.9">這局拿到：黑錢 +${goldGain}${Object.keys(G.scr).map(k=>`、${SCROLLS[k].n}×${G.scr[k]}`).join("")}${G.loot.length?G.loot.map(it=>`<br><b style="color:${RAR[it.r].c}">【${RAR[it.r].n}】${ITEM[it.b].n}</b> <small>${statLine(it.st)}</small>`).join(""):"<br>裝備：沒有（運氣也是實力的一部分）"}<br><small>已放進贓物袋，去贓物袋穿上。</small></div>
     ${win?(G.stage===STAGES.length-1?`<p>「第一份」被打倒了。<br>正版先生看了一眼，還是一句話都沒說。</p>`:""):`<p>${["抄襲者太多了。","你被留言淹沒了。","對方說：好玩就好。"][(R()*3)|0]}</p>`}
     ${extra}
     ${donateHtml()}
