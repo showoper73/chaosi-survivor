@@ -32,6 +32,13 @@
   button:active { transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.3); }
   button.red { background:var(--red); color:#fff; }
   button:disabled { opacity:.4; }
+  button.mini { font-size:13px; padding:4px 10px; margin:3px; opacity:.85; }
+  .donate-big { display:block; width:100%; margin:12px 0 6px; padding:18px 10px 14px; background:var(--red); color:#fff;
+    font-size:clamp(40px,11vw,76px); font-weight:900; letter-spacing:4px; line-height:1.1; border:5px solid var(--ink);
+    border-radius:18px 40px 22px 50px/40px 18px 50px 22px; box-shadow:8px 9px 0 rgba(0,0,0,.35); animation:beg 1.6s ease-in-out infinite; }
+  .donate-big small { display:block; font-size:clamp(14px,3.6vw,20px); letter-spacing:1px; font-weight:700; margin-top:6px; opacity:.95; }
+  @keyframes beg { 0%,100%{ transform:rotate(-1.5deg) scale(1); } 50%{ transform:rotate(1.5deg) scale(1.04); } }
+  .donate-sub { font-size:13px; opacity:.75; margin-bottom:8px; line-height:1.5; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:10px; margin:8px 0; }
   @media (max-width:560px){ .grid { grid-template-columns:1fr 1fr; gap:8px; } .card small { font-size:11.5px; } .screen { padding:14px 12px; } }
   .card { background:#fff; border:3px solid var(--ink); padding:8px; cursor:pointer; text-align:left;
@@ -886,7 +893,10 @@ function showPause(){
     <button class="red" id="res">繼續</button><button id="quit">放棄這關</button></div>`;
   document.getElementById("res").onclick=togglePause; document.getElementById("quit").onclick=()=>{ showTitle(); };
 }
-function donateHtml(){ return `<div class="note" style="border-top:2px dashed #999;padding-top:10px">本遊戲免費，也沒有課金。<br>但歡迎請貓喝杯咖啡 ☕<br>${DONATE_URL?`<a href="${DONATE_URL}" target="_blank" rel="noopener"><button>請貓喝咖啡</button></a>`:`<button disabled>請貓喝咖啡（連結準備中）</button>`}<a href="${YT_URL}" target="_blank" rel="noopener"><button>看科技貓頻道</button></a></div>`; }
+function donateHtml(){
+  const big=`<span>我就是要贊助</span><small>不是咖啡，就是贊助。錢就是錢。</small>`;
+  return DONATE_URL?`<a href="${DONATE_URL}" target="_blank" rel="noopener" style="text-decoration:none"><button class="donate-big">${big}</button></a>`:`<button class="donate-big" disabled>${big}</button>`;
+}
 function endGame(win){
   if(mode==="over") return; mode="over"; pauseBtn.style.display="none"; joy.on=false; sfx(win?"win":"lose");
   let extra="";
@@ -898,11 +908,11 @@ function endGame(win){
     <div class="sub">${G.st.name}｜撐了 ${Math.floor(G.t)} 秒｜Lv ${G.lv}｜擊倒 ${G.kills}</div>
     ${win?(G.stage===STAGES.length-1?`<p>「第一份」被打倒了。<br>正版先生看了一眼，還是一句話都沒說。</p>`:""):`<p>${["抄襲者太多了。","你被留言淹沒了。","對方說：好玩就好。"][(R()*3)|0]}</p>`}
     ${extra}
-    ${hasNext?`<button class="red" id="next">下一關</button>`:""}<button id="again">再打一次</button><button id="menu">回標題</button>
-    ${donateHtml()}</div>`;
+    ${donateHtml()}
+    <div class="donate-sub">別人說「不收贊助，但歡迎請喝咖啡」。<br>我們不演，直接說：本遊戲收贊助。</div>
+    ${hasNext?`<button class="mini" id="next">下一關</button>`:""}<button class="mini" id="menu">回標題</button><a href="${YT_URL}" target="_blank" rel="noopener"><button class="mini">看科技貓頻道</button></a></div>`;
   const s=G.stage;
   if(hasNext) document.getElementById("next").onclick=()=>newGame(s+1);
-  document.getElementById("again").onclick=()=>newGame(s);
   document.getElementById("menu").onclick=showTitle;
 }
 
