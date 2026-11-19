@@ -894,7 +894,7 @@ function showPause(){
   document.getElementById("res").onclick=togglePause; document.getElementById("quit").onclick=()=>{ showTitle(); };
 }
 function donateHtml(){
-  const big=`<span>我就是要贊助</span><small>不是咖啡，就是贊助。錢就是錢。</small>`;
+  const big=`<span>我就是要贊助</span><small>本貓不喝咖啡，只收錢。</small>`;
   return DONATE_URL?`<a href="${DONATE_URL}" target="_blank" rel="noopener" style="text-decoration:none"><button class="donate-big">${big}</button></a>`:`<button class="donate-big" disabled>${big}</button>`;
 }
 function endGame(win){
