@@ -49,6 +49,9 @@
   .card b { display:block; font-size:17px; text-align:center; }
   .card small { display:block; font-size:12.5px; line-height:1.35; opacity:.8; margin-top:3px; }
   .nm { font:inherit; font-size:18px; font-weight:700; text-align:center; width:min(260px,80%); padding:6px 10px; margin:2px 0 8px; border:3px solid var(--ink); border-radius:8px; background:#fff; }
+  .card img.ic { display:block; width:48px; height:48px; margin:0 auto 2px; }
+  .code { width:100%; box-sizing:border-box; height:64px; font:12px monospace; border:2px solid var(--ink); border-radius:6px; padding:6px; margin:6px 0; word-break:break-all; }
+  .toast { position:fixed; left:50%; top:18%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 16px; border-radius:10px; font-weight:700; z-index:9; pointer-events:none; }
   .choice { display:block; width:100%; text-align:left; margin:7px 0; padding:8px 14px; }
   .choice small { display:block; font-weight:400; font-size:13px; opacity:.75; }
   .choice.evo { background:linear-gradient(90deg,#fff2a8,#ffd0c8); }
@@ -90,6 +93,72 @@ const HEROES = [
 ];
 // 抄襲者（怪）會隨機講的話
 const ENEMY_LINES = ["致敬而已啦","我只是參考","好玩就好","又不是只有我抄","尊重原作，但我更愛玩","名字不一樣啊","這叫二創","免費的耶","官方又沒說不行","我改了一個字","你有證據嗎？","抄？這叫學習","原作才是抄我的","刪了就沒事了","我哪有抄","換個顏色就是原創","大家都這樣啊"];
+
+// ---------------- 裝備（跨局保存在背包；局中撿到不停頓） ----------------
+const SLOTS=["weapon","head","body","acc"], SLOTN={ weapon:"武器", head:"頭", body:"身體", acc:"飾品" };
+const RAR=[ { n:"路邊撿的", c:"#7a7a7a" }, { n:"有點東西", c:"#2f6fd6" }, { n:"看起來很貴", c:"#8a3fc0" }, { n:"正版", c:"#e07a10" } ];
+const RM=[1,1.35,1.8,2.4];
+// 數值：%類存小數
+const GSTAT={ dmg:{ n:"攻擊", b:.025, pct:1 }, crit:{ n:"爆擊", b:.012, pct:1 }, armor:{ n:"減傷", b:.015, pct:1 }, hp:{ n:"血量", b:5 }, spd:{ n:"移速", b:.015, pct:1 },
+  cd:{ n:"攻速", b:.012, pct:1 }, area:{ n:"範圍", b:.025, pct:1 }, xp:{ n:"經驗", b:.03, pct:1 }, mag:{ n:"吸取", b:.06, pct:1 }, regen:{ n:"回血", b:.1, per:"/秒" } };
+const MAIN={ weapon:"dmg", head:"crit", body:"armor", acc:null };
+const ITEM={
+  // 武器
+  brief:  { s:"weapon", n:"山寨公事包", ic:"brief", d:"拉鍊是用畫的。" },
+  disc:   { s:"weapon", n:"盜版光碟", ic:"disc", d:"偶爾當機，跟原版一樣。" },
+  pen:    { s:"weapon", n:"律師的鋼筆", ic:"pen", d:"寫一個字五千塊。" },
+  stick:  { s:"weapon", n:"自拍棒", ic:"stick", d:"打人之前先拍一張。" },
+  roller: { s:"weapon", n:"影印機滾筒", ic:"roller", d:"從壞掉的影印機拆下來的。" },
+  usb:    { s:"weapon", n:"外掛 USB", ic:"usb", d:"插上去就變強（違規）。" },
+  kbd:    { s:"weapon", n:"鍵盤俠的鍵盤", ic:"kbd", d:"Enter 鍵已經被敲爛。" },
+  board:  { s:"weapon", n:"已刪除的留言板", ic:"board", d:"截圖還在。" },
+  // 頭
+  melon:  { s:"head", n:"吃瓜帽", ic:"cap", d:"戴上看戲更專心。" },
+  phones: { s:"head", n:"已讀不回耳機", ic:"phones", d:"降噪，專門降法務的聲音。" },
+  khelm:  { s:"head", n:"鍵盤俠頭盔", ic:"helmet", d:"躲在後面最勇敢。" },
+  wig:    { s:"head", n:"假髮（正版）", ic:"wig", d:"假髮是真的，頭髮是假的。" },
+  hard:   { s:"head", n:"安全帽（沒用）", ic:"hard", d:"真的沒用。" },
+  foil:   { s:"head", n:"錫箔帽", ic:"foil", d:"可以擋盜版訊號。" },
+  // 身體
+  suit:   { s:"body", n:"厚臉皮西裝", ic:"suit", d:"臉皮厚到可以當防具。" },
+  rain:   { s:"body", n:"免洗雨衣", ic:"rain", d:"聊勝於無。" },
+  tee:    { s:"body", n:"業配 T 恤", ic:"tee", d:"背後印著折扣碼。" },
+  robe:   { s:"body", n:"律師袍（租的）", ic:"robe", d:"明天要還。" },
+  acid:   { s:"body", n:"防酸雨衣", ic:"rain2", d:"專防酸民。" },
+  fake:   { s:"body", n:"山寨潮 T", ic:"tee2", d:"上面寫 Adidos。" },
+  // 飾品
+  ticket: { s:"acc", n:"9999 號碼牌", ic:"ticket", d:"前面還有 9998 人。" },
+  gold:   { s:"acc", n:"斗內大哥的金項鍊", ic:"chain", d:"鍍金的，跟他的斗內一樣。" },
+  susb:   { s:"acc", n:"存證 USB", ic:"usb2", d:"裡面全是截圖。" },
+  gift:   { s:"acc", n:"1 元首儲禮包", ic:"gift", d:"打開是空的。" },
+  ring:   { s:"acc", n:"AI 生成的戒指", ic:"ring", d:"有六個洞。" },
+  rcpt:   { s:"acc", n:"綠界收據", ic:"rcpt", d:"證明你真的有贊助（不保證）。" },
+  pin:    { s:"acc", n:"置頂留言別針", ic:"pin", d:"別上就被所有人看到。" },
+  // 只有「正版」才會掉
+  cert:   { s:"acc", n:"正版授權書", ic:"cert", d:"全世界只有一張，影印的不算。", leg:{ dmg:.12, crit:.04, xp:.1 } },
+  tie:    { s:"weapon", n:"正版先生的領帶", ic:"tie", d:"他沒說話，但你懂。", leg:{ dmg:.15, area:.08 } },
+  crown:  { s:"head", n:"原創者的皇冠", ic:"crown", d:"上面刻著「我先的」。", leg:{ crit:.06, cd:.05 } },
+  armor:  { s:"body", n:"法務部全身鎧甲", ic:"armor", d:"每一片都是存證信函。", leg:{ armor:.08, hp:20 } },
+};
+const INV_MAX=60;
+function rollItem(stageIdx,boss){
+  const w=boss?[25,45,24,6]:[68,23,8,1]; w[2]+=stageIdx*.6; w[3]+=stageIdx*.25;
+  let x=R()*w.reduce((a,b)=>a+b,0), r=0; for(;r<3;r++){ x-=w[r]; if(x<=0) break; }
+  const keys=Object.keys(ITEM).filter(k=>r===3||!ITEM[k].leg); const b=keys[(R()*keys.length)|0], it=ITEM[b], lv=stageIdx+1;
+  const st={}, mul=()=>RM[r]*(1+lv*.05)*(.8+R()*.4);
+  const add=k=>{ st[k]=+((st[k]||0)+GSTAT[k].b*mul()).toFixed(GSTAT[k].pct?3:1); };
+  const main=MAIN[it.s]||["xp","mag","cd","area"][(R()*4)|0]; add(main);
+  const pool=Object.keys(GSTAT).filter(k=>k!==main); for(let i=0;i<r;i++){ const k=pool.splice((R()*pool.length)|0,1)[0]; add(k); }
+  if(it.leg) for(const k in it.leg) st[k]=+((st[k]||0)+it.leg[k]).toFixed(3);
+  return { u:0, b, r, lv, st, en:0 };
+}
+function addInv(it){ save.inv=save.inv||[]; save.uid=save.uid||1; it.u=save.uid++;
+  if(save.inv.length>=INV_MAX){ const eqd=Object.values(save.eq||{}); const low=[...save.inv].filter(i=>!eqd.includes(i.u)).sort((a,b)=>a.r-b.r||a.lv-b.lv)[0]; if(low){ salvage(low.u); } }
+  save.inv.push(it); }
+function itemVal(it){ return Math.round([3,8,20,60][it.r]*(1+it.lv*.2)); }
+function salvage(u){ const i=save.inv.findIndex(x=>x.u===u); if(i<0) return 0; const v=itemVal(save.inv[i]); save.inv.splice(i,1); for(const k in save.eq) if(save.eq[k]===u) delete save.eq[k]; save.gold=(save.gold||0)+v; return v; }
+function gearStats(){ const g={}; for(const sl of SLOTS){ const u=(save.eq||{})[sl]; const it=(save.inv||[]).find(i=>i.u===u); if(!it) continue; for(const k in it.st) g[k]=(g[k]||0)+it.st[k]; } return g; }
+function statLine(st){ return Object.keys(GSTAT).filter(k=>st[k]).map(k=>{ const d=GSTAT[k]; return d.pct?`${d.n} +${(st[k]*100).toFixed(1).replace(/\.0$/,"")}%`:`${d.n} +${Math.round(st[k]*10)/10}${d.per||""}`; }).join("、"); }
 
 // evo：[要配的被動, 超進化名稱, 說明]
 const WEAPONS = {
@@ -260,7 +329,8 @@ const store = {
   get(){ try { return JSON.parse(localStorage.getItem("chaosi-save")||"{}"); } catch(e){ return {}; } },
   set(v){ try { localStorage.setItem("chaosi-save", JSON.stringify(v)); } catch(e){} },
 };
-let save = Object.assign({ stage:1, origin:false, allOpen:false, best:{}, muted:false }, store.get());
+const SAVE_DEF=()=>({ stage:1, origin:false, allOpen:false, best:{}, muted:false, inv:[], eq:{}, gold:0, uid:1 });
+let save = Object.assign(SAVE_DEF(), store.get());
 
 // ---------------- 聲音（全部用 WebAudio 合成，不用音檔） ----------------
 const AU = { ctx:null, last:{}, step:0, next:0 };
@@ -541,6 +611,44 @@ function drawAnimProp(ctx,kind,cx,by,t,T,rand){
 function propSize(kind,t){ return { sign:[Math.max(90,(t||"").length*15+20)+10,110], bigphone:[110,160], lamp:[70,140], bin:[64,62], boom:[120,120], stall:[140,122], crate:[70,60], table:[160,72], machine:[90,104], plant:[90,96], tent:[150,96], pile:[72,70], rack:[70,128], desk:[124,92] }[kind]; }
 function makeProp(kind,t,seed){ if(ANIM_PROPS[kind]){ const [w,h]=ANIM_PROPS[kind]; return { anim:true, kind, t:t||"", w, h, seed }; } const [w,h]=propSize(kind,t); const cv=document.createElement("canvas"); cv.width=Math.ceil(w*SS); cv.height=Math.ceil((h+4)*SS); const c=cv.getContext("2d"); c.scale(SS,SS); drawProp(c,kind,w/2,h,t||"",rng(seed)); return { cv, w, h }; }
 
+// ---------------- 裝備圖示（醜但看得出來） ----------------
+function drawIcon(c,ic,r){ const R2=rng(ic.length*977+ic.charCodeAt(0)), K=48;
+  c.fillStyle=["#eeeeee","#dce8fb","#ecdcf7","#fde6c8"][r]; c.fillRect(0,0,K,K); c.strokeStyle=RAR[r].c; c.lineWidth=4; c.strokeRect(2,2,K-4,K-4);
+  const o=(x,y,rx,ry,f)=>oval(c,x,y,rx,ry,f,R2,2), q=(x,y,w,h,f)=>rect(c,x,y,w,h,f,R2,2), l=(a,b,x,y,col,w)=>line(c,a,b,x,y,R2,w||2.4,col), t=(s,x,y,sz,col)=>plainText(c,s,x,y,40,sz,col);
+  switch(ic){
+    case "brief": q(10,18,28,20,"#7a4a2a"); q(19,12,10,7,null); t("山寨",24,29,9,"#fff"); break;
+    case "disc": o(24,24,16,16,"#d8d8e0"); o(24,24,4,4,"#fff"); t("盜",24,15,9,"#d6322b"); break;
+    case "pen": c.save(); c.translate(24,24); c.rotate(-.8); q(-4,-18,8,30,"#222"); q(-3,10,6,8,"#e0b84a"); c.restore(); break;
+    case "stick": l(12,40,34,12,"#555",4); q(28,6,14,10,"#2b2b2b"); break;
+    case "roller": q(8,18,32,12,"#9a9a9a"); o(8,24,3,6,"#666"); o(40,24,3,6,"#666"); break;
+    case "usb": case "usb2": q(14,16,16,22,ic==="usb"?"#d6322b":"#3a7bd5"); q(30,20,8,14,"#ccc"); t(ic==="usb"?"外掛":"存證",22,27,8,"#fff"); break;
+    case "kbd": q(6,18,36,16,"#9aa7b8"); c.fillStyle="#fff"; for(let i=0;i<5;i++) c.fillRect(9+i*7,22,5,4); c.fillRect(13,28,22,4); break;
+    case "board": q(8,10,32,22,"#fff8e0"); l(24,32,24,42); t("已刪",24,21,10,"#d6322b"); break;
+    case "tie": q(20,6,8,6,"#d6322b"); c.fillStyle="#d6322b"; c.beginPath(); c.moveTo(20,12); c.lineTo(28,12); c.lineTo(31,36); c.lineTo(24,42); c.lineTo(17,36); c.closePath(); c.fill(); c.lineWidth=2; c.strokeStyle="#222"; c.stroke(); break;
+    case "cap": o(24,26,15,10,"#3c9a4a"); q(8,28,32,5,"#2a6a34"); t("瓜",24,22,10,"#fff"); break;
+    case "phones": c.lineWidth=4; c.strokeStyle="#222"; c.beginPath(); c.arc(24,26,14,Math.PI,0); c.stroke(); q(6,24,8,12,"#555"); q(34,24,8,12,"#555"); break;
+    case "helmet": o(24,24,15,14,"#9aa7b8"); q(12,22,24,8,"#2b2b2b"); break;
+    case "wig": o(24,22,16,13,"#4a2a1a"); o(14,32,5,8,"#4a2a1a"); o(34,32,5,8,"#4a2a1a"); break;
+    case "hard": o(24,28,16,12,"#ffd34d"); q(6,30,36,5,"#e0b030"); t("沒用",24,24,8); break;
+    case "foil": c.fillStyle="#cfd6dd"; c.beginPath(); c.moveTo(24,6); c.lineTo(40,38); c.lineTo(8,38); c.closePath(); c.fill(); c.lineWidth=2; c.strokeStyle="#222"; c.stroke(); break;
+    case "crown": c.fillStyle="#ffd34d"; c.beginPath(); c.moveTo(8,36); c.lineTo(8,14); c.lineTo(16,24); c.lineTo(24,10); c.lineTo(32,24); c.lineTo(40,14); c.lineTo(40,36); c.closePath(); c.fill(); c.lineWidth=2; c.strokeStyle="#222"; c.stroke(); t("我先",24,30,8); break;
+    case "suit": case "armor": q(12,12,24,28,ic==="suit"?"#2f3a4a":"#8f99a6"); c.fillStyle="#d6322b"; c.fillRect(22,14,4,14); if(ic==="armor") t("存證",24,34,8,"#fff"); break;
+    case "rain": case "rain2": q(12,10,24,30,ic==="rain"?"rgba(150,200,255,.6)":"#f5e04a"); o(24,12,8,5,null); if(ic==="rain2") t("防酸",24,28,9); break;
+    case "tee": case "tee2": c.fillStyle=ic==="tee"?"#fff":"#222"; c.beginPath(); c.moveTo(8,16); c.lineTo(18,10); c.lineTo(30,10); c.lineTo(40,16); c.lineTo(36,22); c.lineTo(32,20); c.lineTo(32,40); c.lineTo(16,40); c.lineTo(16,20); c.lineTo(12,22); c.closePath(); c.fill(); c.lineWidth=2; c.strokeStyle="#222"; c.stroke(); t(ic==="tee"?"業配":"Adidos",24,28,ic==="tee"?9:7,ic==="tee"?"#d6322b":"#fff"); break;
+    case "robe": q(12,8,24,34,"#222"); c.fillStyle="#fff"; c.fillRect(22,10,4,8); t("租",24,30,10,"#fff"); break;
+    case "ticket": q(8,14,32,20,"#ffd34d"); t("9999",24,24,11); break;
+    case "chain": c.lineWidth=4; c.strokeStyle="#e0b030"; c.beginPath(); c.arc(24,18,14,.2,Math.PI-.2); c.stroke(); o(24,34,7,7,"#ffd34d"); t("$",24,34,9); break;
+    case "gift": q(10,18,28,22,"#d6322b"); q(8,14,32,6,"#e2554b"); c.fillStyle="#ffd34d"; c.fillRect(22,14,4,26); t("1元",24,32,8,"#fff"); break;
+    case "ring": o(24,26,14,12,null); for(let i=0;i<6;i++){ c.fillStyle="#222"; c.beginPath(); c.arc(24+Math.cos(i)*8,26+Math.sin(i)*6,1.6,0,7); c.fill(); } o(24,12,5,4,"#9be"); break;
+    case "rcpt": q(12,8,24,32,"#fff"); t("綠界",24,18,9,"#1d6b34"); l(16,28,32,28,"#aaa",1.5); l(16,33,30,33,"#aaa",1.5); break;
+    case "pin": o(24,18,9,9,"#d6322b"); l(24,26,24,42,"#555",3); t("頂",24,18,9,"#fff"); break;
+    case "cert": q(8,8,32,32,"#fff8e0"); t("正版",24,20,10); o(30,32,6,6,"#d6322b"); break;
+    default: o(24,24,14,14,"#ccc");
+  } }
+const ICON_CACHE={};
+function iconURL(ic,r){ const k=ic+r; if(!ICON_CACHE[k]){ const cv=document.createElement("canvas"); cv.width=cv.height=96; const c=cv.getContext("2d"); c.scale(2,2); drawIcon(c,ic,r); ICON_CACHE[k]=cv.toDataURL(); } return ICON_CACHE[k]; }
+function itemHtml(it){ const I=ITEM[it.b]; return `<img class="ic" src="${iconURL(I.ic,it.r)}"><b style="color:${RAR[it.r].c}">${I.n}${it.en?` +${it.en}`:""}</b><small>【${RAR[it.r].n}】Lv${it.lv}<br>${statLine(it.st)}</small>`; }
+
 // ---------------- 主角畫法 ----------------
 function drawHero(ctx,id,cx,cy,s,rand){
   const skin="#ffe0c2";
@@ -592,7 +700,8 @@ function newGame(stageIdx){
     weapons:{}, passives:{}, wt:{}, orbAng:0, beamAng:0,
     enemies:[], bullets:[], ebullets:[], gems:[], fx:[], texts:[], pickups:[], fires:[], sweeps:[], marks:[],
     spawnAcc:0, boss:null, bossSpawned:false, won:false, shake:0, msg:null, layout:makeLayout(stageIdx),
-    bubbles:[], sayT:1.2, esayT:2.5, ult:0, ultCd:0, ultFx:null, dmgBy:{}, name:save.name||"無名正版" };
+    bubbles:[], sayT:1.2, esayT:2.5, ult:0, ultCd:0, ultFx:null, dmgBy:{}, name:save.name||"無名正版", loot:[] };
+  G.gear=gearStats(); G.p.maxHp=G.p.hp=HERO_HP+(G.gear.hp||0);
   mode="play"; ui.innerHTML=""; pauseBtn.style.display=muteBtn.style.display="block";
   showMsg(G.st.name, G.st.sub);
   const sp0=G.st.spawn.filter(s=>s[2]===0); for(let i=0;i<14;i++){ const a=R()*6.283, d=viewRadius()*(.75+R()*.3); spawnEnemy(sp0[(R()*sp0.length)|0][0],Math.cos(a)*d,Math.sin(a)*d); } // 一開場就有怪
@@ -643,8 +752,8 @@ function makeLayout(si){ // 每 1400×1400 一塊，塊裡的物件位置固定
 }
 function showMsg(a,b){ G.msg={ a, b, t:2.6 }; }
 const stat=()=>{ const P=G.passives, m=G.gear||{}; return {
-  dmg: 1+0.15*(P.dmg||0)+(m.dmg||0), cd: Math.pow(0.92,P.cd||0)*(1-(m.cd||0)), spd: 1+0.1*(P.spd||0), mag: 1+0.35*(P.mag||0), xp: 1+0.15*(P.xp||0)+(m.xp||0),
-  area: 1+0.12*(P.area||0)+(m.area||0), proj: (P.proj||0)+(m.proj||0), regen: 0.6*(P.regen||0)+(m.regen||0), armor: m.armor||0, crit: 0.05+(m.crit||0) }; };
+  dmg: 1+0.15*(P.dmg||0)+(m.dmg||0), cd: Math.pow(0.92,P.cd||0)*(1-(m.cd||0)), spd: 1+0.1*(P.spd||0)+(m.spd||0), mag: 1+0.35*(P.mag||0)+(m.mag||0), xp: 1+0.15*(P.xp||0)+(m.xp||0),
+  area: 1+0.12*(P.area||0)+(m.area||0), proj: (P.proj||0)+(m.proj||0), regen: 0.6*(P.regen||0)+(m.regen||0), armor: Math.min(.6,m.armor||0), crit: 0.05+(m.crit||0) }; };
 function addWeapon(id){ G.weapons[id]=(G.weapons[id]||0)+1; G.wt[id]=G.wt[id]||0; }
 
 // ---------------- 輸入 ----------------
@@ -694,10 +803,11 @@ function spawnTick(dt){
     } else spawnEnemy(type,G.p.x+Math.cos(a)*dd,G.p.y+Math.sin(a)*dd);
   }
 }
+function bossHp(b){ return b.hp*(0.5+G.lv*0.07)*(1+(G.gear.dmg||0)*.8); }
 function spawnBoss(){
   const b=BOSSES[G.st.boss], a=R()*6.283, dd=viewRadius()*.8;
   const e={ type:"B_"+G.st.boss, d:b, spr:SPR["B_"+G.st.boss], boss:true, x:G.p.x+Math.cos(a)*dd, y:G.p.y+Math.sin(a)*dd, r:b.r,
-    hp:b.hp*(0.5+G.lv*0.07), maxHp:b.hp*(0.5+G.lv*0.07), spd:b.spd, dmg:b.dmg, xp:0, beh:"boss", t:0, ph:0, flash:0, kx:0, ky:0, hitT:{}, dead:false, frame:0, slow:0, ft:0 };
+    hp:bossHp(b), maxHp:bossHp(b), spd:b.spd, dmg:b.dmg, xp:0, beh:"boss", t:0, ph:0, flash:0, kx:0, ky:0, hitT:{}, dead:false, frame:0, slow:0, ft:0 };
   G.enemies.push(e); G.boss=e; G.bossSpawned=true; G.shake=.6; showMsg("BOSS 出現！", b.name); sfx("boss"); if(b.line) say(e,b.line,3.5);
 }
 function hitEnemy(e,dmg,kx,ky){
@@ -709,11 +819,13 @@ function hitEnemy(e,dmg,kx,ky){
 }
 function killEnemy(e){
   e.dead=true; G.kills++; sfx("kill"); if(!e.boss) G.ult=Math.min(1,G.ult+1/(110+G.stage*15));
-  if(e.boss){ G.won=true; G.boss=null; G.shake=1; sfx("boom"); for(let i=0;i<40;i++) G.fx.push({ k:"spark", x:e.x, y:e.y-e.r, vx:(R()-.5)*500, vy:(R()-.5)*500, t:.8 }); setTimeout(()=>{ if(G&&G.won&&mode==="play") endGame(true); },1200); return; }
+  if(e.boss){ const n=R()<.35?2:1; for(let i=0;i<n;i++){ const it=rollItem(G.stage,true); G.loot.push(it); G.texts.push({ x:e.x, y:e.y-e.r*2-i*22, t:2.5, s:`掉了【${RAR[it.r].n}】${ITEM[it.b].n}` }); }
+    G.won=true; G.boss=null; G.shake=1; sfx("boom"); for(let i=0;i<40;i++) G.fx.push({ k:"spark", x:e.x, y:e.y-e.r, vx:(R()-.5)*500, vy:(R()-.5)*500, t:.8 }); setTimeout(()=>{ if(G&&G.won&&mode==="play") endGame(true); },1200); return; }
   if(e.beh==="split" && e.d.splitTo) for(let i=0;i<2;i++) spawnEnemy(e.d.splitTo,e.x+(R()-.5)*20,e.y+(R()-.5)*20);
   if(G.gems.length<500) G.gems.push({ x:e.x, y:e.y, v:e.xp, t:0 }); else { const g=G.gems[(R()*G.gems.length)|0]; g.v+=e.xp; }
   if(R()<0.008) G.pickups.push({ k:"coffee", x:e.x, y:e.y });
   if(R()<0.003) G.pickups.push({ k:"magnet", x:e.x, y:e.y });
+  if(R()<0.0025 && G.pickups.length<30) G.pickups.push({ k:"item", it:rollItem(G.stage,false), x:e.x, y:e.y });
   G.fx.push({ k:"poof", x:e.x, y:e.y-e.r, r:e.r, t:.25 });
 }
 function updateEnemies(dt){
@@ -860,6 +972,7 @@ function updatePlayer(dt){
   G.gems=G.gems.filter(g=>!g.dead);
   for(const k of G.pickups){ if(dist2(k.x,k.y,p.x,p.y)<30*30){ k.dead=true; sfx("pick");
     if(k.k==="coffee"){ p.hp=Math.min(p.maxHp,p.hp+30); G.texts.push({ x:p.x, y:p.y-60, t:1, s:"+30 ☕" }); }
+    else if(k.k==="item"){ G.loot.push(k.it); G.texts.push({ x:p.x, y:p.y-80, t:1.8, s:`撿到【${RAR[k.it.r].n}】${ITEM[k.it.b].n}` }); if(k.it.r>=2) sfx("evo"); }
     else { for(const g of G.gems) g.pull=true; G.texts.push({ x:p.x, y:p.y-60, t:1, s:"全部吸過來" }); } } }
   G.pickups=G.pickups.filter(k=>!k.dead);
 }
@@ -944,7 +1057,8 @@ function draw(){
     else if(it.k===2){ const bob=p.moving?Math.abs(Math.sin(G.t*12))*3:0; if(p.inv>0 && Math.floor(G.t*20)%2) ctx.globalAlpha=.4;
       ctx.save(); ctx.translate(snap(p.x),snap(p.y-bob)); ctx.scale(p.face,1); ctx.drawImage(hs.frames[p.moving?Math.floor(G.t*6)%2:0],-hs.w/2,-snap(hs.footY),hs.w,hs.h); ctx.restore(); ctx.globalAlpha=1;
       ctx.fillStyle="rgba(0,0,0,.6)"; ctx.fillRect(p.x-24,p.y+6,48,6); ctx.fillStyle="#d6322b"; ctx.fillRect(p.x-24,p.y+6,48*clamp(p.hp/p.maxHp,0,1),6); label(ctx,G.name,snap(p.x),snap(p.y+22),11,"#222"); if(save.title) label(ctx,"「"+save.title+"」",snap(p.x),snap(p.y+36),9,"#888"); }
-    else if(it.k===3){ label(ctx,it.o.k==="coffee"?"☕":"🧲",it.o.x,it.o.y-14-Math.sin(G.t*4)*3,24); }
+    else if(it.k===3){ const o=it.o; if(o.k==="item"){ ctx.globalAlpha=.45; ctx.fillStyle=RAR[o.it.r].c; ctx.beginPath(); ctx.arc(o.x,o.y-16,15+Math.sin(G.t*6)*3,0,7); ctx.fill(); ctx.globalAlpha=1; label(ctx,"🎁",o.x,o.y-16-Math.sin(G.t*4)*3,24); }
+      else label(ctx,o.k==="coffee"?"☕":"🧲",o.x,o.y-14-Math.sin(G.t*4)*3,24); }
   }
   drawWeapons(p);
   if(G.boss&&G.boss.dashT>.55){ const b=G.boss, len=e2len(b); ctx.save(); ctx.strokeStyle="rgba(214,50,43,.7)"; ctx.lineWidth=b.r*1.2; ctx.setLineDash([18,12]); ctx.lineCap="butt"; ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.x+b.ldx*len,b.y+b.ldy*len); ctx.stroke(); ctx.restore(); label(ctx,"要衝了！",b.x,b.y-b.r*2.4,20,"#d6322b"); }
@@ -1047,8 +1161,8 @@ function paintHeroCanvases(){ ui.querySelectorAll("canvas[data-hero]").forEach(c
 function showTitle(){
   G=null; mode="menu"; pauseBtn.style.display="none"; muteBtn.style.display="block";
   ui.innerHTML=`<div class="screen"><h1>抄襲<span>倖存者</span></h1><div class="sub">所有人都在抄倖存者，那就讓被抄的人來打。</div>
-    <button class="red" id="go">開始</button><div class="note">電腦：WASD／方向鍵移動，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.3　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
-  document.getElementById("go").onclick=showHeroes;
+    <button class="red" id="go">開始</button><button id="bag">背包</button><button id="code">存檔碼</button><div class="note">電腦：WASD／方向鍵移動，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.4　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
+  document.getElementById("go").onclick=showHeroes; document.getElementById("bag").onclick=()=>showBag(showTitle); document.getElementById("code").onclick=showCode;
 }
 function showHeroes(){
   ui.innerHTML=`<div class="screen"><h2>創建角色</h2><input id="nm" class="nm" maxlength="8" value="${(save.name||"").replace(/"/g,"")}" placeholder="取個名字（抄別人的也行）"><div class="sub">選外型：角色只差在長相、台詞和必殺，強不強看裝備${save.title?`<br>頭銜：「${save.title}」`:""}</div><div class="grid">${HEROES.map(h=>{ const lock=h.hidden&&!save.origin;
@@ -1062,7 +1176,8 @@ function showHeroes(){
 function showStages(){
   const open=i=>i<save.stage;
   ui.innerHTML=`<div class="screen"><h2>選關卡</h2><div class="grid">${STAGES.map((s,i)=>`<div class="card ${open(i)?"":"locked"}" data-i="${i}"><b>${i+1}. ${open(i)?s.name:"？？？"}</b><small>${open(i)?s.sub:"打完上一關解鎖"}${save.best[i]?`<br>✔ 已通關`:""}</small></div>`).join("")}</div>
-    <button id="back">返回</button></div>`;
+    <button id="back">返回</button><button id="bag2">背包（換裝備）</button></div>`;
+  document.getElementById("bag2").onclick=()=>showBag(showStages);
   ui.querySelectorAll(".card").forEach(c=>c.onclick=()=>{ const i=+c.dataset.i; if(open(i)) newGame(i); });
   document.getElementById("back").onclick=showHeroes;
 }
@@ -1072,12 +1187,41 @@ function showPause(){
     <button class="red" id="res">繼續</button><button id="quit">放棄這關</button></div>`;
   document.getElementById("res").onclick=togglePause; document.getElementById("quit").onclick=()=>{ showTitle(); };
 }
+function showBag(back){ const inv=save.inv||[], eq=save.eq||{}, eqd=Object.values(eq), find=u=>inv.find(i=>i.u===u);
+  const slots=SLOTS.map(sl=>{ const it=find(eq[sl]); return `<div class="card ${it?"":"locked"}" data-u="${it?it.u:""}"><small style="text-align:center">${SLOTN[sl]}</small>${it?itemHtml(it):`<b style="opacity:.5">（空）</b><small style="text-align:center">裸奔中</small>`}</div>`; }).join("");
+  const list=[...inv].sort((a,b)=>b.r-a.r||b.lv-a.lv).map(it=>`<div class="card ${eqd.includes(it.u)?"sel":""}" data-u="${it.u}">${itemHtml(it)}</div>`).join("");
+  ui.innerHTML=`<div class="screen"><h2>背包</h2><div class="sub">金幣 ${save.gold||0}（第三批拿來買卷軸）｜${inv.length}/${INV_MAX} 件<br>目前加成：${statLine(gearStats())||"沒有（裸奔中）"}</div>
+    <div class="grid">${slots}</div><div class="sub">點裝備可以穿上或回收；紅框是穿著的</div><div class="grid">${list||"<small>空的。去打怪吧，裝備會自己掉。</small>"}</div>
+    <button id="bk">返回</button><button id="junk">一鍵回收「路邊撿的」</button></div>`;
+  ui.querySelectorAll(".card[data-u]").forEach(c=>c.onclick=()=>{ const u=+c.dataset.u; if(u) showItem(u,back); });
+  document.getElementById("bk").onclick=back;
+  document.getElementById("junk").onclick=()=>{ let g=0; for(const it of [...save.inv]) if(it.r===0&&!Object.values(save.eq).includes(it.u)) g+=salvage(it.u); store.set(save); showBag(back); if(g) toast(`回收了一堆垃圾，金幣 +${g}`); };
+}
+function showItem(u,back){ const it=save.inv.find(i=>i.u===u); if(!it) return showBag(back); const I=ITEM[it.b], on=save.eq[I.s]===u;
+  ui.innerHTML=`<div class="screen"><h2>${SLOTN[I.s]}</h2><div class="card" style="max-width:240px;margin:0 auto;cursor:default">${itemHtml(it)}<small style="margin-top:6px">「${I.d}」</small></div>
+    <button class="red" id="wear">${on?"脫下":"穿上"}</button><button id="sell">回收（金幣 +${itemVal(it)}）</button><button id="bk">返回</button></div>`;
+  document.getElementById("wear").onclick=()=>{ if(on) delete save.eq[I.s]; else save.eq[I.s]=u; store.set(save); showBag(back); };
+  document.getElementById("sell").onclick=()=>{ const g=salvage(u); store.set(save); showBag(back); toast(`回收了，金幣 +${g}`); };
+  document.getElementById("bk").onclick=()=>showBag(back);
+}
+function toast(msg){ const d=document.createElement("div"); d.className="toast"; d.textContent=msg; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
+function showCode(){ const code="CHAOSI1:"+btoa(unescape(encodeURIComponent(JSON.stringify(save))));
+  ui.innerHTML=`<div class="screen"><h2>存檔碼</h2><div class="sub">換手機、清瀏覽器之前先複製起來，貼回來就能還原。<br>（這串亂碼就是你的全部身家，不要被抄走）</div>
+    <textarea id="cd" class="code" readonly>${code}</textarea><button class="red" id="cp">複製</button>
+    <div class="sub" style="margin-top:12px">還原：把存檔碼貼在下面（會蓋掉現在的進度）</div><textarea id="in" class="code" placeholder="貼上存檔碼"></textarea>
+    <button id="rs">還原</button><button id="bk">返回</button></div>`;
+  document.getElementById("cp").onclick=()=>{ const ta=document.getElementById("cd"); ta.select(); (navigator.clipboard?navigator.clipboard.writeText(code):Promise.reject()).then(()=>toast("已複製"),()=>{ try{ document.execCommand("copy"); toast("已複製"); }catch(e){ toast("請自己長按複製"); } }); };
+  document.getElementById("rs").onclick=()=>{ try{ const v=document.getElementById("in").value.trim(); if(!v.startsWith("CHAOSI1:")) throw 0; const o=JSON.parse(decodeURIComponent(escape(atob(v.slice(8))))); if(!o||typeof o!=="object"||!o.stage) throw 0;
+      save=Object.assign(SAVE_DEF(),o); store.set(save); selHero=save.look||"mr"; toast("還原成功"); showTitle(); } catch(e){ toast("這不是存檔碼（抄錯了嗎？）"); } };
+  document.getElementById("bk").onclick=showTitle;
+}
 function donateHtml(){
   const big=`<span>我就是要贊助</span><small>本貓不喝咖啡，只收錢。</small>`;
   return DONATE_URL?`<a href="${DONATE_URL}" target="_blank" rel="noopener" style="text-decoration:none"><button class="donate-big">${big}</button></a>`:`<button class="donate-big" disabled>${big}</button>`;
 }
 function endGame(win){
   if(mode==="over") return; mode="over"; pauseBtn.style.display="none"; joy.on=false; sfx(win?"win":"lose");
+  const goldGain=Math.round(G.kills/8+(win?30+G.stage*15:0)); save.gold=(save.gold||0)+goldGain; for(const it of G.loot) addInv(it); store.set(save);
   let extra="";
   if(win){ save.best[G.stage]=true; if(G.stage+2>save.stage) save.stage=Math.min(STAGES.length,G.stage+2);
     if(G.stage===STAGES.length-1 && !save.origin){ save.origin=true; extra=`<p><b>解鎖隱藏角色：倖存者始祖！</b><br>原來大家抄的，都是他的玩法。</p>`; }
@@ -1087,6 +1231,7 @@ function endGame(win){
     <div class="sub">${G.name}（${G.hero.name}）｜${G.st.name}｜撐了 ${Math.floor(G.t)} 秒｜Lv ${G.lv}｜擊倒 ${G.kills}</div>
     ${win?`<p><b>${G.name}</b> 打倒了 <b>${BOSSES[G.st.boss].name}</b></p>`:""}
     ${dmgTable()}
+    <div class="note" style="text-align:left;opacity:.9">這局拿到：金幣 +${goldGain}${G.loot.length?G.loot.map(it=>`<br><b style="color:${RAR[it.r].c}">【${RAR[it.r].n}】${ITEM[it.b].n}</b> <small>${statLine(it.st)}</small>`).join(""):"<br>裝備：沒有（運氣也是實力的一部分）"}<br><small>已放進背包，去背包穿上。</small></div>
     ${win?(G.stage===STAGES.length-1?`<p>「第一份」被打倒了。<br>正版先生看了一眼，還是一句話都沒說。</p>`:""):`<p>${["抄襲者太多了。","你被留言淹沒了。","對方說：好玩就好。"][(R()*3)|0]}</p>`}
     ${extra}
     ${donateHtml()}
