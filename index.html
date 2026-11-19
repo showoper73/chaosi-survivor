@@ -1257,7 +1257,7 @@ function showTitle(){
   G=null; mode="menu"; pauseBtn.style.display="none"; muteBtn.style.display="block";
   ui.innerHTML=`<div class="screen"><h1>抄襲<span>倖存者</span></h1><div class="sub">所有人都在抄倖存者，那就讓被抄的人來打。</div>
     <div class="sub" style="margin-top:-6px"><b style="color:var(--red)">已被玩過 9000+ 次</b>（數字是抄來的）</div>
-    <button class="red" id="go">開始</button><button id="bag">贓物袋</button><button id="shop">黑市</button><button id="ttls">自封頭銜</button><button id="code">備份碼（盜版用）</button><button id="wish">許願池</button><div class="note">電腦：WASD／方向鍵移動，空白鍵再抄一次，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.7　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
+    <button class="red" id="go">開始</button><button id="bag">贓物袋</button><button id="shop">黑市</button><button id="ttls">自封頭銜</button><button id="code">備份碼（盜版用）</button><button id="wish">許願池</button><div class="note">電腦：WASD／方向鍵移動，空白鍵再抄一次，P 暫停　手機：按住畫面拖曳<br>全部手繪、故意很醜。本作是諷刺搞笑，角色與現實人物無關（大概）。<br>v1.8　作者：<a href="${YT_URL}" target="_blank" rel="noopener">科技貓 TechCat</a></div></div>`;
   document.getElementById("go").onclick=showHeroes; document.getElementById("bag").onclick=()=>showBag(showTitle); document.getElementById("code").onclick=showCode; document.getElementById("shop").onclick=()=>showShop(showTitle); document.getElementById("ttls").onclick=showTitles; document.getElementById("wish").onclick=()=>showWish(showTitle);
 }
 function showHeroes(){
